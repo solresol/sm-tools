@@ -228,3 +228,33 @@ def typical_search_program(sm_module,creation_arg_type,invocation,return_part):
     
     for k in answer.keys:
         print k.__dict__[return_part].value
+
+def typical_retrieve_program(sm_module,creation_arg_type,invocation):
+    web_service = smwsdl(sm_module)
+    parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
+                          version=version)
+    web_service.add_to_command_line_parser(parser,creation_arg_type,
+                                           include_keys=True,
+                                           include_instance=False,
+                                           provide_defaults=False)
+    (options,args) = parser.parse_args()
+    new_incident = web_service.create_soap_object(creation_arg_type,options.__dict__)
+    answer = web_service.invoke(invocation,new_incident)
+    
+    fields = answer.model.instance.__dict__.keys()
+    fields.sort()
+    for k in fields:
+        if k[0]=="_": continue
+        print k+": ",
+        v = answer.model.instance.__dict__[k]
+        if v._type == "Array":
+            first=True
+            for elem in v.__dict__.keys():
+                if elem[0] == '_': continue
+                for subelem in v.__dict__[elem]:
+                    #if subelem[0]=="_": continue
+                    if first: first=False
+                    else: print (" "*len(k+": ")),
+                    print subelem.value
+        else:
+            print v.value
