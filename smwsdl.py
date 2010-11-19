@@ -1,9 +1,18 @@
 # This module provides support for HP ServiceManager Web Services (WSDL)
 # $Id$
 
+
 # The following constants are the tested modules.
 
 INCIDENT = "incident"
+
+
+# Which is not very many. But I'll work on that more later.
+
+######################################################################
+#
+# This was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
+
 version = '$Revision$'
 
 import ConfigParser, os, string

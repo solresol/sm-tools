@@ -17,6 +17,8 @@ version = '$Revision$'
 # environment it looks at. sm-close-incident.py does not use
 # the 'incident defaults' section.
 
+# This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
+
 import smwsdl
 
 smwsdl.typical_update_program(smwsdl.INCIDENT,'IncidentModelType','CloseIncident',uses_values=True)

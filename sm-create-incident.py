@@ -3,6 +3,8 @@
 version = "$Revision$"
 id = "$Id$"
 
+# This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
+
 import smwsdl
 from optparse import OptionParser
 
@@ -62,6 +64,8 @@ from optparse import OptionParser
 #  SMWSDL_DEFAULTS=application-problem sm-create-incident.py
 #
 ######################################################################
+
+# This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
 
 import smwsdl
 answer = smwsdl.typical_create_program(smwsdl.INCIDENT,'IncidentModelType','CreateIncident','IncidentID')

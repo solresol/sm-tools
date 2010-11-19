@@ -10,6 +10,8 @@ version = '$Revision$'
 # the 'incident defaults' section.
 
 
+# This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
+
 import smwsdl
 
 smwsdl.typical_update_program(smwsdl.INCIDENT,'IncidentModelType','UpdateIncident')
