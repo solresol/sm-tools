@@ -5,6 +5,7 @@
 # The following constants are the tested modules.
 
 INCIDENT = "incident"
+SERVICE_DESK = "servicedesk"
 
 
 # Which is not very many. But I'll work on that more later.
@@ -49,7 +50,9 @@ def camel2unix(x):
 ######################################################################
 
 
-wsdl_paths = { INCIDENT : "IncidentManagement.wsdl" }
+wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
+               SERVICE_DESK: "ServiceDesk.wsdl"
+               }
 
 class smwsdl:
     """Reads config files from /etc/smwsdl.cfg, ~/.smswsdl.cfg,
