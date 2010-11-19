@@ -64,7 +64,6 @@ to."""
         AffectedCI is part of the soap_data_type, returns a parser
         which understands --affected-ci=....
         """
-        # Logically, include_keys=False implies provide_defaults=True
         modelthing = self.__client.factory.create(soap_data_type)
         ticket_fields = []
         if include_keys:
@@ -214,3 +213,18 @@ def typical_create_program(sm_module,creation_arg_type,invocation,return_part):
     for m in answer.messages.message:
         sys.stderr.write(m.value + "\n")
     print answer.model.instance.__dict__[return_part].value
+
+
+def typical_search_program(sm_module,creation_arg_type,invocation,return_part):
+    web_service = smwsdl(sm_module)
+    parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
+                          version=version)
+    web_service.add_to_command_line_parser(parser,creation_arg_type,
+                                           include_keys=False,
+                                           provide_defaults=False)
+    (options,args) = parser.parse_args()
+    new_incident = web_service.create_soap_object(creation_arg_type,options.__dict__)
+    answer = web_service.invoke(invocation,new_incident)
+    
+    for k in answer.keys:
+        print k.__dict__[return_part].value
