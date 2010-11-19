@@ -3,7 +3,7 @@
 # $Id$
 version = '$Revision$'
 # Usually you'll just invoke this as
-#  sm-close-incident.py --incident-id=IM123456
+#  sm-update-incident.py --incident-id=IM123456 --status="Work In Progress"
 #
 # See sm-create-incident.py for what files it reads and what
 # environment it looks at.
@@ -21,9 +21,9 @@ web_service.add_to_command_line_parser(parser,"IncidentModelType",provide_defaul
 (options,args) = parser.parse_args()
 
 new_incident = web_service.create_soap_object("IncidentModelType",options.__dict__)
+#print new_incident
 
-answer = web_service.invoke('CloseIncident',new_incident)
-
+answer = web_service.invoke('UpdateIncident',new_incident)
 
 import sys
 for m in answer.messages.message:

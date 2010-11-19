@@ -54,7 +54,7 @@ to."""
     def print_available_methods(self):
         print self.__client
 
-    def add_to_command_line_parser(self,parser,soap_data_type):
+    def add_to_command_line_parser(self,parser,soap_data_type,provide_defaults=True):
         """Given a SOAP data type, returns an OptionParser which
         parses command-lines based on the WSDL service. e.g. if
         AffectedCI is part of the soap_data_type, returns a parser
@@ -68,6 +68,7 @@ to."""
             parser.add_option("--"+unixified,dest=field,type='string',
                               action="store",help=helptext)
             # Now read the config file and see if there are any defaults
+            if not(provide_defaults): continue
             if self.__config.has_option(self.__default_section,field):
                 def_value = self.__config.get(self.__default_section,field)
                 parser.set_default(field,def_value)
@@ -75,7 +76,13 @@ to."""
     def create_soap_object(self,soap_data_type,initialisation_dict):
         modelthing = self.__client.factory.create(soap_data_type)
         for field in initialisation_dict.keys():
-            modelthing.instance.__dict__[field] = initialisation_dict[field]
+            if modelthing.keys.__dict__.has_key(field):
+                modelthing.keys.__dict__[field] = initialisation_dict[field]
+            elif modelthing.instance.__dict__.has_key(field):
+                modelthing.instance.__dict__[field] = initialisation_dict[field]
+            # And skip it otherwise. It's probably irrelevant.
+            # Maybe I should warn?
+
         return modelthing
 
     def invoke(self,function,argument):

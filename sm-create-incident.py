@@ -16,6 +16,8 @@ from optparse import OptionParser
 #
 # ... and have it generate an incident in ServiceManager
 #
+# The incident number is written to stdout. Messages are on stderr.
+#
 ######################################################################
 #
 # It looks for a configuration file in the following places:
@@ -61,7 +63,6 @@ from optparse import OptionParser
 #
 ######################################################################
 
-
 web_service = smwsdl.smwsdl(smwsdl.INCIDENT)
 
 parser = OptionParser(usage="usage: %prog --TicketFieldName=Value ...",
@@ -77,4 +78,10 @@ answer = web_service.invoke('CreateIncident',new_incident)
 
 incident_id = answer.model.instance.IncidentID.value
 print incident_id
+
+import sys
+
+for m in answer.messages.message:
+    sys.stderr.write(m.value + "\n")
+    
 
