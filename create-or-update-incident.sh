@@ -28,12 +28,12 @@ INCIDENTS=$(sm-search-incidents.py --description="*uuid=$UUID*")
 
 if [ "$INCIDENTS" = "" ]
 then
-  sm-create-incident.py --description="$DESCRIPTION\nuuid=$UUID" "$@"
+  sm-create-incident.py --description="$DESCRIPTION  uuid=$UUID" "$@"
 else
     if [ "$DESCRIPTION" = "" ]
     then
 	sm-update-incident.py --incident-id=$INCIDENTS "$@"
     else
-	sm-update-incident.py --incident-id=$INCIDENTS --description="$DESCRIPTION\nuuid=$UUID" "$@"
+	sm-update-incident.py --incident-id=$INCIDENTS --description="$DESCRIPTION  uuid=$UUID" "$@"
     fi
 fi
