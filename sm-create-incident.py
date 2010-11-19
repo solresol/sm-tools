@@ -63,25 +63,10 @@ from optparse import OptionParser
 #
 ######################################################################
 
-web_service = smwsdl.smwsdl(smwsdl.INCIDENT)
+import smwsdl
+answer = smwsdl.typical_create_program(smwsdl.INCIDENT,'IncidentModelType','CreateIncident','IncidentID')
 
-parser = OptionParser(usage="usage: %prog --TicketFieldName=Value ...",
-                      version=version)
 
-web_service.add_to_command_line_parser(parser,"IncidentModelType")
 
-(options,args) = parser.parse_args()
-
-new_incident = web_service.create_soap_object("IncidentModelType",options.__dict__)
-
-answer = web_service.invoke('CreateIncident',new_incident)
-
-incident_id = answer.model.instance.IncidentID.value
-print incident_id
-
-import sys
-
-for m in answer.messages.message:
-    sys.stderr.write(m.value + "\n")
     
 

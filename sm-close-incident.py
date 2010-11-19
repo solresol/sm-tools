@@ -11,23 +11,18 @@ version = '$Revision$'
 
 import smwsdl
 
-web_service = smwsdl.smwsdl(smwsdl.INCIDENT)
-
-from optparse import OptionParser
-
-parser = OptionParser(usage="usage: %prog --incident-id=...",version=version)
-
-web_service.add_to_command_line_parser(parser,"IncidentModelType",provide_defaults=False)
-
-(options,args) = parser.parse_args()
-
-new_incident = web_service.create_soap_object("IncidentModelType",options.__dict__)
-
-answer = web_service.invoke('CloseIncident',new_incident)
+smwsdl.typical_update_program(smwsdl.INCIDENT,'IncidentModelType','CloseIncident',uses_values=False)
 
 
-import sys
-for m in answer.messages.message:
-    sys.stderr.write(m.value+'\n')
+
+
+
+
+
+
+
+
+
+
     
 
