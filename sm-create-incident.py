@@ -3,6 +3,10 @@
 version = "$Revision: 1509 $"
 id = "$Id: service-manager-incident.py 1509 2010-11-18 07:44:17Z gregb $"
 
+import smwsdl
+from optparse import OptionParser
+
+
 ######################################################################
 #
 # The point of this program is so that you can run:
@@ -57,129 +61,19 @@ id = "$Id: service-manager-incident.py 1509 2010-11-18 07:44:17Z gregb $"
 #
 ######################################################################
 
-import ConfigParser, os, string
-from optparse import OptionParser
-import logging
 
-config_file_locations = ['/etc/smswsdl.conf',os.path.expanduser('~/.smwsdl.cfg'),'.smwsdl.cfg']
-if os.environ.has_key('SMWSDL_CONF'):
-    config_file_locations.append(os.environ['SMWSDL_CONF'])
-
-config = ConfigParser.ConfigParser()
-
-files_read = config.read(config_file_locations)
-if files_read == []:
-    sys.exit("Cannot continue because none of the following files were usable: "+string.join(config_file_locations," "))
-
-
-
-######################################################################
-# Know what server to connect to (i.e. read the "connection" section):
-
-if config.has_option('connection','server'):
-    service_manager_server = config.get('connection','server')
-else:
-    sys.exit("Server not specified")
-
-if config.has_option('connection','protocol'):
-    service_manager_protocol = config.get('connection','protocol')
-else:
-    service_manager_protocol = 'http'
-
-if config.has_option('connection','port'):
-    service_manager_port = config.getint('connection','port')
-else:
-    service_manager_port = 13080
-
-if config.has_option('connection','password'):
-    service_manager_password = config.get('connection','password')
-elif config.has_option('connection','pass'):
-    service_manager_password = config.get('connection','pass')
-else:
-    service_manager_password = ''
-
-if config.has_option('connection','username'):
-    service_manager_username = config.get('connection','username')
-elif config.has_option('connection','user'):
-    service_manager_username = config.get('connection','user')
-else:
-    sys.exit("Username not specified")
-
-
-
-######################################################################
-
-# This program requires the python SUDS package. If the import in the
-# next line fails, then try
-# - sudo apt-get install python-setuptools  or yum install python-setuptools
-# - sudo easy_install http://pypi.python.org/packages/2.6/s/suds/suds-0.4-py2.6.egg
-
-logging.basicConfig(level=logging.ERROR)
-from suds import WebFault
-from suds.client import Client
-url = service_manager_protocol + "://" + service_manager_server + ":" + `service_manager_port` + "/SM/7/IncidentManagement.wsdl"
-from suds.transport.http import HttpAuthenticated
-t = HttpAuthenticated(username=service_manager_username,
-                      password=service_manager_password)
-client = Client(url,transport=t)
-
-########################################
-
-# This next black magic figures out what fields there are in the
-# modelthing instance and turns them into command-line options.
-
-# Firstly, if a field begins with __ then it's python or suds internal
-# and not derived from the WSDL.
-
-modelthing = client.factory.create('IncidentModelType')
-incident_ticket_fields = filter(lambda x: x[0:1]!='_',dir(modelthing.instance))
+web_service = smwsdl.smwsdl(smwsdl.INCIDENT)
 
 parser = OptionParser(usage="usage: %prog --TicketFieldName=Value ...",
                       version=version)
 
+web_service.add_to_command_line_parser(parser,"IncidentModelType")
 
-def camel2unix(x):
-    answer = x[0].lower()
-    for i in range(1,len(x)-1):
-        answer = answer + x[i].lower()
-        if x[i].islower() and x[i+1].isupper():
-            answer = answer + '-'
-        if (i+2<len(x)) and x[i].isupper() and x[i+1].isupper() and x[i+2].islower():
-            answer = answer + '-'
-    answer = answer + x[-1].lower()
-    return answer
-
-if os.environ.has_key('SMWSDL_INCIDENT_DEFAULTS'):
-    section_to_use = os.environ["SMWSDL_INCIDENT_DEFAULTS"]
-elif os.environ.has_key('SMWSDL_DEFAULTS'):
-    section_to_use = os.environ["SMWSDL_DEFAULTS"]
-else:
-    section_to_use = 'incident defaults'
-
-for ticket_field in incident_ticket_fields:
-    helptext = "Set the "+ticket_field+" field in the created ticket."
-    unixified = camel2unix(ticket_field)
-    parser.add_option("--"+unixified,dest=ticket_field,type='string',
-                      action="store",
-                      help=helptext)
-    for config_file_option_name in [ticket_field,unixified]:
-        if config.has_option(section_to_use,config_file_option_name):
-            parser.set_default(ticket_field,config.get(section_to_use,config_file_option_name))
-                      
 (options,args) = parser.parse_args()
 
+new_incident = web_service.create_soap_object("IncidentModelType",options.__dict__)
 
-# To-do: cope better with array arguments such as description. At the moment
-# it works, but it's kind of by luck because ServiceManager will promote a
-# string to an array.
-#
-# Neat would be to make sure that numbers and dates get validated at the client
-# end rather than hammering ServiceManager, but it will do for now.
-
-for ticket_field in options.__dict__.keys():
-    modelthing.instance.__dict__[ticket_field] = options.__dict__[ticket_field]
-    
-answer = client.service.CreateIncident(modelthing)
+answer = web_service.invoke('CreateIncident',new_incident)
 
 incident_id = answer.model.instance.IncidentID.value
 print incident_id
