@@ -51,6 +51,9 @@ to."""
         self.__get_connection_details()
         self.__create_soap_client()
 
+    def print_available_methods(self):
+        print self.__client
+
     def add_to_command_line_parser(self,parser,soap_data_type):
         """Given a SOAP data type, returns an OptionParser which
         parses command-lines based on the WSDL service. e.g. if
