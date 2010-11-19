@@ -236,7 +236,8 @@ def typical_search_program(sm_module,creation_arg_type,invocation,return_part):
     answer = web_service.invoke(invocation,new_incident)
     
     for k in answer.keys:
-        print k.__dict__[return_part].value
+        if k.__dict__[return_part].__dict__.has_key("value"):
+            print k.__dict__[return_part].value
 
 def typical_retrieve_program(sm_module,creation_arg_type,invocation):
     web_service = smwsdl(sm_module)
