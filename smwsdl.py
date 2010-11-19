@@ -63,7 +63,7 @@ to."""
         modelthing = self.__client.factory.create(soap_data_type)
         ticket_fields = filter(lambda x: x[0:1]!='_',dir(modelthing.instance))
         for field in ticket_fields:
-            helptext = "Set the "+field+" field in the created ticket."
+            helptext = "The "+field+" field."
             unixified = camel2unix(field)
             parser.add_option("--"+unixified,dest=field,type='string',
                               action="store",help=helptext)

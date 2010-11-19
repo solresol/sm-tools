@@ -3,10 +3,10 @@
 # $Id$
 version = '$Revision$'
 # Usually you'll just invoke this as
-#  sm-close-incident.py --incident-id=IM123456
+#  sm-resolve-incident.py --incident-id=IM123456 
 #
 # See sm-create-incident.py for what files it reads and what
-# environment it looks at. sm-close-incident.py does not use
+# environment it looks at. sm-create-incident.py does not use
 # the 'incident defaults' section.
 
 import smwsdl
@@ -23,8 +23,7 @@ web_service.add_to_command_line_parser(parser,"IncidentModelType",provide_defaul
 
 new_incident = web_service.create_soap_object("IncidentModelType",options.__dict__)
 
-answer = web_service.invoke('CloseIncident',new_incident)
-
+answer = web_service.invoke('ResolveIncident',new_incident)
 
 import sys
 for m in answer.messages.message:

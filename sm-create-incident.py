@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-version = "$Revision: 1509 $"
-id = "$Id: service-manager-incident.py 1509 2010-11-18 07:44:17Z gregb $"
+version = "$Revision$"
+id = "$Id$"
 
 import smwsdl
 from optparse import OptionParser

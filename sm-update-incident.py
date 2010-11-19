@@ -6,7 +6,8 @@ version = '$Revision$'
 #  sm-update-incident.py --incident-id=IM123456 --status="Work In Progress"
 #
 # See sm-create-incident.py for what files it reads and what
-# environment it looks at.
+# environment it looks at.  sm-update-incident.py does not use
+# the 'incident defaults' section.
 
 import smwsdl
 
