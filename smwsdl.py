@@ -144,7 +144,7 @@ to."""
         self.__default_section = self.__sm_module + " defaults"
 
     def __read_config(self):
-        config_file_locations = ['/etc/smswsdl.conf',
+        config_file_locations = ['/etc/smswsdl.cfg',
                                  os.path.expanduser('~/.smwsdl.cfg'),
                                  '.smwsdl.cfg'
                                  ]
