@@ -6,7 +6,7 @@
 
 INCIDENT = "incident"
 SERVICE_DESK = "servicedesk"
-
+CONFIGURATION = "configuration"
 
 # Which is not very many. But I'll work on that more later.
 
@@ -51,7 +51,8 @@ def camel2unix(x):
 
 
 wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
-               SERVICE_DESK: "ServiceDesk.wsdl"
+               SERVICE_DESK: "ServiceDesk.wsdl",
+               CONFIGURATION: "ConfigurationManagement.wsdl"
                }
 
 class smwsdl:
