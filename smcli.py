@@ -272,3 +272,66 @@ def typical_retrieve_program(sm_module,creation_arg_type,invocation):
                     print subelem.value
         else:
             print v.value
+
+
+
+# To-do:
+# 1. Merge sm-*.py into here.
+# 2. Support windows&VMS style command args /foo:bar
+# 3. Handle arrays properly.
+
+
+if __name__ == '__main__':
+    modules = { 
+        INCIDENT : {
+            'create' : ('IncidentModelType','CreateIncident','IncidentID'),
+            'close' : ('IncidentModelType','CloseIncident',uses_values=True),
+            'update' : ('IncidentModelType','UpdateIncident'),
+            'reopen' : ('IncidentModelType','ReopenIncident',uses_values=True),
+            'search' : ('IncidentModelType','RetrieveIncidentKeysList','IncidentID'),
+            'retrieve' : ('IncidentModelType','RetrieveIncident')
+            },
+        SERVICE_DESK : {
+            'create' : ('InteractionModelType','CreateInteraction','CallID'),
+            'search' : ('InteractionModelType','RetrieveInteractionKeysList','CallID')
+            }
+        }
+    
+
+
+
+    
+
+
+        
+
+
+
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+    
+

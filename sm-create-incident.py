@@ -5,7 +5,7 @@ id = "$Id$"
 
 # This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
 
-import smwsdl
+import smcli
 from optparse import OptionParser
 
 
@@ -67,7 +67,7 @@ from optparse import OptionParser
 
 # This program was developed by Greg Baker <gregb@ifost.org.au> (c) 2010
 
-import smwsdl
+import smcli
 answer = smwsdl.typical_create_program(smwsdl.INCIDENT,'IncidentModelType','CreateIncident','IncidentID')
 
 
