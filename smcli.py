@@ -49,11 +49,11 @@ class smwsdl:
     """Reads config files from /etc/smwsdl.ini, ~/.smswsdl.ini,
 ./.smswsdl.ini and $SMWSDL_CONF. Figures out which server to connect
 to."""
-    def __init__(self,sm_module):
+    def __init__(self,sm_module,config_file=None):
         self.__sm_module = sm_module
         self.__wsdl_path = wsdl_paths[sm_module]
 
-        self.__read_config()
+        self.__read_config_files(config_file)
         self.__deduce_defaults_section()
         self.__get_connection_details()
         self.__create_soap_client()
@@ -135,8 +135,14 @@ to."""
             return
         self.__default_section = self.__sm_module + " defaults"
 
-    def __read_config(self):
-        if os.name == 'nt':
+    def __read_config_files(self,config_file):
+        self.__config = ConfigParser.ConfigParser()
+        if config_file is not None:
+            if type(config_file) == type([]):
+                config_file_locations = config_file
+            else:
+                config_file_locations = [config_file]
+        elif os.name == 'nt':
             config_file_locations = [ 'smwsdl.ini' ]
             # Perhaps I should look up the registry instead?
             # Look in the install location?
@@ -150,7 +156,6 @@ to."""
         else:
             sys.exit("Don't know where to look for config files on "+os.name)
 
-        self.__config = ConfigParser.ConfigParser()
         files_read = self.__config.read(config_file_locations)
         if files_read == []:
             sys.exit("Cannot continue because none of the following files were usable: "+string.join(config_file_locations," "))
