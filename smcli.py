@@ -360,6 +360,8 @@ def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
 # 7. Fix up help so that it shows aliases as well
 # 8. Typical retrieve program should return a dictionary, I think.
 # 10. Implement delete methods (e.g. delete contact)
+# 11. Maybe the "typical_*_program" stuff should be wrapped in a class?
+#     Then I could ditch 'action' as an argument perhaps?
 
 
 supported_actions = { INCIDENT: ['create','close','update','reopen','search','retrieve','wsdl'],
