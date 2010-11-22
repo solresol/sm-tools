@@ -210,18 +210,22 @@ to."""
                       
 
 
-def typical_update_program(sm_module,search_arg_type,invocation,uses_values=True):
+def typical_update_program(sm_module,search_arg_type,invocation,uses_values=True,print_return=False):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
     web_service.add_to_command_line_parser(parser,search_arg_type,include_instance=uses_values)
     (options,args) = parser.parse_args()
     new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
+    ret = []
     for m in answer.messages.message:
-        sys.stderr.write(m.value+'\n')
+        ret.append(m.value)
+    sys.stderr.write(`answer`)
+    if print_return:
+        sys.stderr.write(string.join(ret,'\n')+'\n')
 
 
-def typical_create_program(sm_module,creation_arg_type,invocation,return_part):
+def typical_create_program(sm_module,creation_arg_type,invocation,return_part=None,print_return=False):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field-name=Value ...",
                           version=version)
@@ -233,10 +237,16 @@ def typical_create_program(sm_module,creation_arg_type,invocation,return_part):
     answer = web_service.invoke(invocation,new_incident)
     for m in answer.messages.message:
         sys.stderr.write(m.value + "\n")
-    print answer.model.instance.__dict__[return_part].value
+    
+    if return_part is None:
+        ret = `answer.model.instance`
+    else:
+        ret = answer.model.instance.__dict__[return_part].value
+    if print_return:
+        print ret
 
 
-def typical_search_program(sm_module,search_arg_type,invocation,return_part):
+def typical_search_program(sm_module,search_arg_type,invocation,return_part=None,print_return=False):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
@@ -246,12 +256,18 @@ def typical_search_program(sm_module,search_arg_type,invocation,return_part):
     (options,args) = parser.parse_args()
     new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
-    
+
+    answers = []
     for k in answer.keys:
         if k.__dict__[return_part].__dict__.has_key("value"):
-            print k.__dict__[return_part].value
+            if return_part is None:
+                answers.append(`k`)
+            else:
+                answers.append(k.__dict__[return_part].value)
+    if print_return:
+        print string.join(answers,'\n')
 
-def typical_retrieve_program(sm_module,search_arg_type,invocation):
+def typical_retrieve_program(sm_module,search_arg_type,invocation,print_return=False):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
@@ -267,7 +283,8 @@ def typical_retrieve_program(sm_module,search_arg_type,invocation):
     fields.sort()
     for k in fields:
         if k[0]=="_": continue
-        print k+": ",
+        if print_return: 
+            print k+": ",
         v = answer.model.instance.__dict__[k]
         if v._type == "Array":
             first=True
@@ -275,15 +292,18 @@ def typical_retrieve_program(sm_module,search_arg_type,invocation):
                 if elem[0] == '_': continue
                 for subelem in v.__dict__[elem]:
                     #if subelem[0]=="_": continue
-                    if first: first=False
-                    else: print (" "*len(k+": ")),
-                    print subelem.value
+                    if print_return:
+                        if first: first=False
+                        else: print (" "*len(k+": ")),
+                        print subelem.value
         else:
-            print v.value
+            if print_return:
+                print v.value
 
-def typical_list_methods_program(sm_module):
+def typical_list_methods_program(sm_module,print_return=False):
     web_service = smwsdl(sm_module)
-    web_service.print_available_methods()
+    if print_return:
+        web_service.print_available_methods()
 
 # To-do:
 # 1. Merge sm-*.py into here.
@@ -293,6 +313,7 @@ def typical_list_methods_program(sm_module):
 # 5. Table aliases: e.g. contacts are part of configuration.
 # 6. Usage argument should show what we are doing
 # 7. Fix up help so that it shows aliases as well
+# 8. Typical retrieve program should return a dictionary, I think.
 
 actions = {
     'create' : { INCIDENT: { 'creation_arg_type': 'IncidentModelType',
@@ -324,7 +345,11 @@ actions = {
                              'return_part' : 'ContactName'}
                  },
     'retrieve' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
-                               'invocation': 'RetrieveIncident' }
+                               'invocation': 'RetrieveIncident' },
+                   SERVICE_DESK: { 'search_arg_type' : 'InteractionModelType',
+                                   'invocation' : 'RetrieveInteraction'},
+                   CONTACTS: { 'search_arg_type': 'ContactModelType',
+                               'invocation':'RetrieveContact' }
                    },
     'list-methods' : { INCIDENT:  {},
                        SERVICE_DESK: {},
@@ -382,6 +407,6 @@ if __name__ == '__main__':
                  string.join(actions[action].keys()," "))
     kwargs = actions[action][table]
     function = function_calls[action]
-    function(table,**kwargs)
+    function(table,print_return=True,**kwargs)
     
 
