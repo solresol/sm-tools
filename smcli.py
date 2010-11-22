@@ -7,8 +7,8 @@
 INCIDENT = "incident"
 SERVICE_DESK = "servicedesk"
 CONFIGURATION = "configuration"
-CONTACTS = 'contacts'
-
+CONTACT = 'contact'
+PROBLEM_MANAGEMENT = 'problem'
 
 ######################################################################
 #
@@ -38,7 +38,8 @@ logging.basicConfig(level=logging.ERROR)
 wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                SERVICE_DESK: "ServiceDesk.wsdl",
                CONFIGURATION: "ConfigurationManagement.wsdl",
-               CONTACTS: "ConfigurationManagement.wsdl",
+               CONTACT: "ConfigurationManagement.wsdl",
+               PROBLEM_MANAGEMENT: "ProblemManagement.wsdl"
                }
 
 class UpdateException(Exception):
@@ -211,34 +212,28 @@ def camel2unix(x):
 
 ######################################################################
                       
+return_parts = { INCIDENT: 'IncidentID',
+                 SERVICE_DESK: 'CallID',
+                 CONTACT: 'ContactName',
+                 PROBLEM_MANAGEMENT: 'id'
+                 }
+
+def standard_arg_type(module_name):
+    return module_name.capitalize() + "ModelType"
 
 
-def typical_update_program(sm_module,cmdline,search_arg_type,invocation,uses_values=True,print_return=False):
-    web_service = smwsdl(sm_module)
-    parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
-    web_service.add_to_command_line_parser(parser,search_arg_type,include_instance=uses_values)
-    (options,args) = parser.parse_args(cmdline)
-    new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
-    answer = web_service.invoke(invocation,new_incident)
-    ret = []
-    if not(answer.__dict__.has_key('messages')):
-        # Something really bad happened
-        raise UpdateException
-    for m in answer.messages.message:
-        ret.append(m.value)
-    if print_return:
-        sys.stderr.write(string.join(ret,'\n')+'\n')
-    return ret
-
-def typical_create_program(sm_module,cmdline,creation_arg_type,invocation,return_part=None,print_return=False):
+def typical_create_program(sm_module,cmdline,action,print_return=False):
+    arg_type=standard_arg_type(sm_module)
+    invocation='Create' + sm_module.capitalize()
+    return_part=return_parts[sm_module]
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field-name=Value ...",
                           version=version)
-    web_service.add_to_command_line_parser(parser,creation_arg_type,
+    web_service.add_to_command_line_parser(parser,arg_type,
                                            include_keys=False,
                                            provide_defaults=True)
     (options,args) = parser.parse_args(cmdline)
-    new_incident = web_service.create_soap_object(creation_arg_type,options.__dict__)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
     for m in answer.messages.message:
         sys.stderr.write(m.value + "\n")
@@ -251,47 +246,82 @@ def typical_create_program(sm_module,cmdline,creation_arg_type,invocation,return
         print ret
     return ret
 
-def typical_search_program(sm_module,cmdline,search_arg_type,invocation,return_part=None,print_return=False):
+
+def typical_search_program(sm_module,cmdline,action,print_return=False):
+    arg_type=standard_arg_type(sm_module)
+    invocation='Retrieve' + sm_module.capitalize() + 'KeysList'
+    return_part=return_parts[sm_module]
+
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
-    web_service.add_to_command_line_parser(parser,search_arg_type,
+    web_service.add_to_command_line_parser(parser,arg_type,
                                            include_keys=False,
                                            provide_defaults=False)
     (options,args) = parser.parse_args(cmdline)
-    new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
 
     answers = []
     for k in answer.keys:
+        if return_part is None:
+            answers.append(`k`)
+            continue
         if k.__dict__[return_part].__dict__.has_key("value"):
-            if return_part is None:
-                answers.append(`k`)
-            else:
-                answers.append(k.__dict__[return_part].value)
+            answers.append(k.__dict__[return_part].value)
     if print_return:
         print string.join(answers,'\n')
     return answers
 
-def typical_retrieve_program(sm_module,cmdline,search_arg_type,invocation,print_return=False):
+
+def typical_update_program(sm_module,cmdline,action,print_return=False):
+    arg_type=standard_arg_type(sm_module)
+    invocation=action.capitalize() + sm_module.capitalize()
+    web_service = smwsdl(sm_module)
+    parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
+    web_service.add_to_command_line_parser(parser,arg_type,include_instance=uses_values)
+    (options,args) = parser.parse_args(cmdline)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__)
+    answer = web_service.invoke(invocation,new_incident)
+    ret = []
+    if not(answer.__dict__.has_key('messages')):
+        # Something really bad happened
+        raise UpdateException
+    for m in answer.messages.message:
+        ret.append(m.value)
+    if print_return:
+        sys.stderr.write(string.join(ret,'\n')+'\n')
+    return ret
+
+
+def typical_retrieve_program(sm_module,cmdline,action,print_return=False):
+    arg_type=standard_arg_type(sm_module)
+    invocation='Retrieve' + sm_module.capitalize()
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
-    web_service.add_to_command_line_parser(parser,search_arg_type,
+    web_service.add_to_command_line_parser(parser,arg_type,
                                            include_keys=True,
                                            include_instance=False,
                                            provide_defaults=False)
     (options,args) = parser.parse_args(cmdline)
-    new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
+    #print answer
     
-    fields = answer.model.instance.__dict__.keys()
+    fields = answer.model.instance.__dict__.keys() + answer.model.keys.__dict__.keys()
     fields.sort()
 
     ret = {}
+    seen_before = {}
     for k in fields:
+        if seen_before.has_key(k): continue
+        seen_before[k] = True
         if k[0]=="_": continue
-        v = answer.model.instance.__dict__[k]
+        if answer.model.instance.__dict__.has_key(k):
+            v = answer.model.instance.__dict__[k]
+        else:
+            v = answer.model.keys.__dict__[k]
         if v._type == "Array":
             ret[k] = []
             for elem in v.__dict__.keys():
@@ -317,78 +347,28 @@ def typical_retrieve_program(sm_module,cmdline,search_arg_type,invocation,print_
                 print k+": "+ret[k]
     return ret
 
-def typical_list_methods_program(sm_module,cmdline,print_return=False):
+def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
     web_service = smwsdl(sm_module)
     if print_return:
         web_service.print_available_methods()
     return None
 
 # To-do:
-# 1. Merge sm-*.py into here.
-# 2. Support windows&VMS style command args /foo:bar
 # 3. Handle arrays properly.
-# 4. Return error code if something went wrong.
-# 5. Table aliases: e.g. contacts are part of configuration.
+# 4. Return error code if something went wrong for more than just updates.
 # 6. Usage argument should show what we are doing
 # 7. Fix up help so that it shows aliases as well
 # 8. Typical retrieve program should return a dictionary, I think.
-# 9. --foo-bar (unix) and /FooBar (windows) are equivalent. That
-#    will make it trickier
-
-actions = {
-    'create' : { INCIDENT: { 'creation_arg_type': 'IncidentModelType',
-                             'invocation': 'CreateIncident',
-                             'return_part': 'IncidentID'  },
-                 SERVICE_DESK: { 'creation_arg_type': 'InteractionModelType',
-                                 'invocation': 'CreateInteraction',
-                                 'return_part': 'CallID'   },
-                 CONTACTS: {'creation_arg_type': 'ContactModelType',
-                            'invocation': 'CreateContact',
-                            'return_part': 'ContactName' },
-                 },
-    'close' :  { INCIDENT: { 'search_arg_type': 'IncidentModelType',
-                             'invocation': 'CloseIncident',
-                             'uses_values':True },
-                 SERVICE_DESK: {'search_arg_type' : 'InteractionModelType',
-                                'invocation' : 'CloseInteraction',
-                                'uses_values':True }          
-                 },
-    'update' : { INCIDENT:  {'search_arg_type': 'IncidentModelType',
-                             'invocation': 'UpdateIncident' },
-                 SERVICE_DESK: {'search_arg_type':'InteractionModelType',
-                                'invocation': 'UpdateInteraction' },
-                 CONTACTS: {'search_arg_type': 'ContactModelType',
-                            'invocation' : 'UpdateContact' }
-                 },
-    'reopen' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
-                             'invocation': 'ReopenIncident',
-                             'uses_values': True }
-                 },
-    'search' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
-                             'invocation': 'RetrieveIncidentKeysList',
-                             'return_part': 'IncidentID' },
-                 SERVICE_DESK: { 'search_arg_type': 'InteractionModelType',
-                                 'invocation': 'RetrieveInteractionKeysList',
-                                 'return_part': 'CallID' },
-                 CONTACTS: { 'search_arg_type': 'ContactModelType',
-                             'invocation': 'RetrieveContactKeysList',
-                             'return_part' : 'ContactName'}
-                 },
-    'retrieve' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
-                               'invocation': 'RetrieveIncident' },
-                   SERVICE_DESK: { 'search_arg_type' : 'InteractionModelType',
-                                   'invocation' : 'RetrieveInteraction'},
-                   CONTACTS: { 'search_arg_type': 'ContactModelType',
-                               'invocation':'RetrieveContact' }
-                   },
-    'list-methods' : { INCIDENT:  {},
-                       SERVICE_DESK: {},
-                       CONTACTS: {},
-                       CONFIGURATION: {},
-                       }
-    }
+# 10. Implement delete methods (e.g. delete contact)
 
 
+supported_actions = { INCIDENT: ['create','close','update','reopen','search','retrieve','wsdl'],
+                      SERVICE_DESK: ['create','close','update','search','retrieve','wsdl'],
+                      CONTACT: ['create','update','reopen','search','retrieve','wsdl'],
+                      PROBLEM_MANAGEMENT: ['create','close','reopen','search','retrieve','update','wsdl'],
+                      CONFIGURATION: ['wsdl']
+                      }
+  
 function_calls = {
     'create'  : typical_create_program,
     'close'   : typical_update_program,
@@ -396,7 +376,7 @@ function_calls = {
     'reopen'  : typical_update_program,
     'search'  : typical_search_program,
     'retrieve': typical_retrieve_program,
-    'list-methods': typical_list_methods_program
+    'wsdl': typical_list_methods_program
     }
 
 aliases = { 'new' : 'create',
@@ -404,10 +384,11 @@ aliases = { 'new' : 'create',
             'change' : 'update',
             'alter' : 'update',
             'find' : 'search',
+            'list' : 'search',
             'return' : 'retrieve',
             'lookup' : 'retrieve',
             'fetch' : 'retrieve',
-            'debug' : 'list-methods' }
+            'debug' : 'wsdl' }
 
 table_aliases = { 'incident' : INCIDENT,
                   'incidents' : INCIDENT,
@@ -417,9 +398,10 @@ table_aliases = { 'incident' : INCIDENT,
                   'service-desk' : SERVICE_DESK,
                   'call' : SERVICE_DESK,
                   'calls' : SERVICE_DESK,
-                  'contact' : CONTACTS,
-                  'contacts' : CONTACTS,
-                  'configuration' : CONFIGURATION
+                  'contact' : CONTACT,
+                  'contacts' : CONTACT,
+                  'configuration' : CONFIGURATION,
+                  'problems' : PROBLEM_MANAGEMENT
                   }
 
 if __name__ == '__main__':
@@ -448,14 +430,13 @@ if __name__ == '__main__':
                 cmdline[i] = justslash.sub('--',cmdline[i])
                 continue
 
-    if not(actions.has_key(action)):
-        sys.exit("Unknown action. Actions are: "+string.join(actions.keys()," "))
-    if not(actions[action].has_key(table)):
-                sys.exit("Unsupported table. Tables supported for " + action + " are "+
-                 string.join(actions[action].keys()," "))
-    kwargs = actions[action][table]
+    if not(supported_actions.has_key(table)):
+        sys.exit("Unsupported table. Supported tables are: " + string.join(supported_actions.keys()," "))
+
+    if not(action in supported_actions[table]):
+        sys.exit("Unsupported action. Actions are: "+string.join(supported_actions[table],' '))
     function = function_calls[action]
     try:
-        function(table,print_return=True,cmdline=cmdline,**kwargs)
+        function(table,cmdline,action,print_return=True)
     except UpdateException:
         sys.exit("Update failure")
