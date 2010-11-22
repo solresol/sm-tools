@@ -4,6 +4,6 @@
 
 import smcli
 
-web_service = smwsdl.smwsdl(smwsdl.INCIDENT)
+web_service = smcli.smwsdl(smcli.INCIDENT)
 
 web_service.print_available_methods()
