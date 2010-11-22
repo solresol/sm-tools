@@ -2,13 +2,13 @@
 # $Id$
 
 
-# The following constants are the tested modules.
+# The following constants are the tested modules. (Have to be lower case)
 
 INCIDENT = "incident"
 SERVICE_DESK = "servicedesk"
 CONFIGURATION = "configuration"
+CONTACTS = 'contacts'
 
-# Which is not very many. But I'll work on that more later.
 
 ######################################################################
 #
@@ -52,12 +52,13 @@ def camel2unix(x):
 
 wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                SERVICE_DESK: "ServiceDesk.wsdl",
-               CONFIGURATION: "ConfigurationManagement.wsdl"
+               CONFIGURATION: "ConfigurationManagement.wsdl",
+               CONTACTS: "ConfigurationManagement.wsdl",
                }
 
 class smwsdl:
-    """Reads config files from /etc/smwsdl.cfg, ~/.smswsdl.cfg,
-./.smswsdl.cfg and $SMWSDL_CONF. Figures out which server to connect
+    """Reads config files from /etc/smwsdl.ini, ~/.smswsdl.ini,
+./.smswsdl.ini and $SMWSDL_CONF. Figures out which server to connect
 to."""
     def __init__(self,sm_module):
         self.__sm_module = sm_module
@@ -148,10 +149,17 @@ to."""
         self.__default_section = self.__sm_module + " defaults"
 
     def __read_config(self):
-        config_file_locations = ['/etc/smwsdl.cfg',
-                                 os.path.expanduser('~/.smwsdl.cfg'),
-                                 '.smwsdl.cfg'
-                                 ]
+        if sys.platform[:3] == 'win':
+            config_file_locations = [ 'smwsdl.ini' ]
+            # Perhaps I should look up the registry instead?
+            # Look in the install location?
+        elif sys.platform == 'vms':
+            sys.exit("I don't have a VMS box to test. What config files should this read?")
+        else:
+            config_file_locations = ['/etc/smwsdl.ini',
+                                     os.path.expanduser('~/.smwsdl.ini'),
+                                     '.smwsdl.ini'
+                                     ]
         if os.environ.has_key('SMWSDL_CONF'):
             config_file_locations.append(os.environ['SMWSDL_CONF'])
 
@@ -228,31 +236,31 @@ def typical_create_program(sm_module,creation_arg_type,invocation,return_part):
     print answer.model.instance.__dict__[return_part].value
 
 
-def typical_search_program(sm_module,creation_arg_type,invocation,return_part):
+def typical_search_program(sm_module,search_arg_type,invocation,return_part):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
-    web_service.add_to_command_line_parser(parser,creation_arg_type,
+    web_service.add_to_command_line_parser(parser,search_arg_type,
                                            include_keys=False,
                                            provide_defaults=False)
     (options,args) = parser.parse_args()
-    new_incident = web_service.create_soap_object(creation_arg_type,options.__dict__)
+    new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
     
     for k in answer.keys:
         if k.__dict__[return_part].__dict__.has_key("value"):
             print k.__dict__[return_part].value
 
-def typical_retrieve_program(sm_module,creation_arg_type,invocation):
+def typical_retrieve_program(sm_module,search_arg_type,invocation):
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
-    web_service.add_to_command_line_parser(parser,creation_arg_type,
+    web_service.add_to_command_line_parser(parser,search_arg_type,
                                            include_keys=True,
                                            include_instance=False,
                                            provide_defaults=False)
     (options,args) = parser.parse_args()
-    new_incident = web_service.create_soap_object(creation_arg_type,options.__dict__)
+    new_incident = web_service.create_soap_object(search_arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
     
     fields = answer.model.instance.__dict__.keys()
@@ -273,65 +281,107 @@ def typical_retrieve_program(sm_module,creation_arg_type,invocation):
         else:
             print v.value
 
-
+def typical_list_methods_program(sm_module):
+    web_service = smwsdl(sm_module)
+    web_service.print_available_methods()
 
 # To-do:
 # 1. Merge sm-*.py into here.
 # 2. Support windows&VMS style command args /foo:bar
 # 3. Handle arrays properly.
+# 4. Return error code if something went wrong.
+# 5. Table aliases: e.g. contacts are part of configuration.
+# 6. Usage argument should show what we are doing
+# 7. Fix up help so that it shows aliases as well
 
+actions = {
+    'create' : { INCIDENT: { 'creation_arg_type': 'IncidentModelType',
+                             'invocation': 'CreateIncident',
+                             'return_part': 'IncidentID'  },
+                 SERVICE_DESK: { 'creation_arg_type': 'InteractionModelType',
+                                 'invocation': 'CreateInteraction',
+                                 'return_part': 'CallID'   }
+                 },
+    'close' :  { INCIDENT: { 'search_arg_type': 'IncidentModelType',
+                             'invocation': 'CloseIncident',
+                             'uses_values':True }
+                 },
+    'update' : { INCIDENT:  {'search_arg_type': 'IncidentModelType',
+                             'invocation': 'UpdateIncident' }
+                 },
+    'reopen' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
+                             'invocation': 'ReopenIncident',
+                             'uses_values': True }
+                 },
+    'search' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
+                             'invocation': 'RetrieveIncidentKeysList',
+                             'return_part': 'IncidentID' },
+                 SERVICE_DESK: { 'search_arg_type': 'InteractionModelType',
+                                 'invocation': 'RetrieveInteractionKeysList',
+                                 'return_part': 'CallID' },
+                 CONTACTS: { 'search_arg_type': 'ContactModelType',
+                             'invocation': 'RetrieveContactKeysList',
+                             'return_part' : 'ContactName'}
+                 },
+    'retrieve' : { INCIDENT: { 'search_arg_type': 'IncidentModelType',
+                               'invocation': 'RetrieveIncident' }
+                   },
+    'list-methods' : { INCIDENT:  {},
+                       SERVICE_DESK: {},
+                       CONTACTS: {},
+                       CONFIGURATION: {},
+                       }
+    }
+
+
+function_calls = {
+    'create'  : typical_create_program,
+    'close'   : typical_update_program,
+    'update'  : typical_update_program,
+    'reopen'  : typical_update_program,
+    'search'  : typical_search_program,
+    'retrieve': typical_retrieve_program,
+    'list-methods': typical_list_methods_program
+    }
+
+aliases = { 'new' : 'create',
+            'make' : 'create',
+            'change' : 'update',
+            'alter' : 'update',
+            'find' : 'search',
+            'return' : 'retrieve',
+            'lookup' : 'retrieve',
+            'fetch' : 'retrieve',
+            'debug' : 'list-methods' }
+
+table_aliases = { 'incident' : INCIDENT,
+                  'incidents' : INCIDENT,
+                  'interaction' : SERVICE_DESK,
+                  'interactions' : SERVICE_DESK,
+                  'servicedesk' : SERVICE_DESK,
+                  'service-desk' : SERVICE_DESK,
+                  'call' : SERVICE_DESK,
+                  'contact' : CONTACTS,
+                  'contacts' : CONTACTS,
+                  'configuration' : CONFIGURATION
+                  }
 
 if __name__ == '__main__':
-    modules = { 
-        INCIDENT : {
-            'create' : ('IncidentModelType','CreateIncident','IncidentID'),
-            'close' : ('IncidentModelType','CloseIncident',uses_values=True),
-            'update' : ('IncidentModelType','UpdateIncident'),
-            'reopen' : ('IncidentModelType','ReopenIncident',uses_values=True),
-            'search' : ('IncidentModelType','RetrieveIncidentKeysList','IncidentID'),
-            'retrieve' : ('IncidentModelType','RetrieveIncident')
-            },
-        SERVICE_DESK : {
-            'create' : ('InteractionModelType','CreateInteraction','CallID'),
-            'search' : ('InteractionModelType','RetrieveInteractionKeysList','CallID')
-            }
-        }
+    action = sys.argv[1].lower()
+    if (aliases.has_key(action)): action = aliases[action]
     
+    table = sys.argv[2].lower()
+    if (table_aliases.has_key(table)):
+        table = table_aliases[table]
 
-
-
-    
-
-
-        
-
-
-
-
-    
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
+    sys.argv = sys.argv[2:]
+    if not(actions.has_key(action)):
+        sys.exit("Unknown action. Actions are: "+string.join(actions.keys()," "))
+    if not(actions[action].has_key(table)):
+                sys.exit("Unsupported table. Tables supported for " + action + " are "+
+                 string.join(actions[action].keys()," "))
+    kwargs = actions[action][table]
+    function = function_calls[action]
+    function(table,**kwargs)
     
 
