@@ -24,16 +24,16 @@ fi
 
 PATH=/var/opt/OV/shared/nnm/actions:$PATH
 
-INCIDENTS=$(sm-search-incidents.py --description="*uuid=$UUID*")
+INCIDENTS=$(smcli.py search incidents --description="*uuid=$UUID*")
 
 if [ "$INCIDENTS" = "" ]
 then
-  sm-create-incident.py --description="$DESCRIPTION  uuid=$UUID" "$@"
+  smcli.py create incident --description="$DESCRIPTION  uuid=$UUID" "$@"
 else
     if [ "$DESCRIPTION" = "" ]
     then
-	sm-update-incident.py --incident-id=$INCIDENTS "$@"
+	smcli.py create incident --incident-id=$INCIDENTS "$@"
     else
-	sm-update-incident.py --incident-id=$INCIDENTS --description="$DESCRIPTION  uuid=$UUID" "$@"
+	smcli.py update incident --incident-id=$INCIDENTS --description="$DESCRIPTION  uuid=$UUID" "$@"
     fi
 fi
