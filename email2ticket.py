@@ -9,6 +9,7 @@ import os
 import email
 import getpass
 import fnmatch
+import re
 
 configuration = ConfigParser.ConfigParser()
 
@@ -17,9 +18,14 @@ if len(sys.argv) <= 1:
 else:
     config_file = sys.argv[1]
 
-# Both this program and smcli will share the same config file.
 configuration.read(config_file)
-application = smcli.smwsdl(smcli.SERVICE_DESK,config_file)
+contact_lookup = smcli.smwsdl(smcli.CONTACT)
+application = smcli.smwsdl(smcli.SERVICE_DESK)
+
+def get_contact(email_address):
+    return typical_search_program(smcli.CONTACT,
+                                  ["--email-address="+email_address],
+                                  'search')
 
 protocol = configuration.get('mail','protocol').upper()
 server = configuration.get('mail','server')
@@ -56,6 +62,36 @@ else:
 # One day -- add a Bayesian filter to figure out all the remaining
 # fields.
 
+tickets_to_create = []
+
+email_re = re.compile('[a-zA-Z0-9._+-]+@[a-zA-Z0-9_+-]+.[a-zA-Z0-9_.+-]+')
+
+def message_to_ticket(message):
+    this_ticket = {}
+    if subject_is_title: this_ticket['Title'] = msg['Subject']
+    if from_is_contact: this_ticket['Contact'] = get_contact(msg['From'])  
+    else:
+        for part in msg.walk():
+            m=email_re.match(part)
+            if m is None: continue
+            this_ticket['Contact'] = get_contact(part[m.start():m.end()])
+    if body_is_description:
+        for part in msg.walk():
+            if part.get_content_maintype() == "text":
+                if part.get_content_subtype() == "plain":
+                    this_ticket['Description'] = part.get_payload()
+                    break
+                if part.get_content_subtype() == "html":
+                    # Then it will have to do if nothing better comes along
+                    this_ticket['Description'] = part.get_payload()
+        # Hope that there was some valid part of that message.
+    print message_to_ticket
+    command_line = []
+    for k in message_to_ticket.keys(): 
+        command_line.append("--"+k+"="+message_to_ticket[k])
+    application.typical_create_program(smcli.SERVICE_DESK,command_line,'create')
+
+
 if protocol[:3] == 'POP':
     if protocol[-1] == 'S' or protocol[-3:] == "SSL":
         if port is None: M = poplib.POP3_SSL(server)
@@ -65,6 +101,12 @@ if protocol[:3] == 'POP':
         else:            M = poplib.POP3(server,port)
     M.user(username)
     M.pass_(password)
+    M.list()
+    (numMsgs, totalSize) = M.stat()
+    for i in range(1, numMsgs + 1):
+        (header, msglines, octets) = M.retr(i)
+        msg = email.message_from_string(string.join(msglines,"\n"))
+        message_to_ticket(msg)
     # Finish this bit
 elif protocol[:4] == "IMAP":
     if protocol[-1] == "S" or protocol[-3:] == "SSL":
@@ -75,7 +117,11 @@ elif protocol[:4] == "IMAP":
         else:            M = imaplib.IMAP4(server,port)
     M.login(username,password)
     M.select()
-    typ, data = M.search(None,'ALL')
-    # Finish this bit too.
-    
-    
+    (status,msglist) = M.search(None,'ALL')
+    msg_ids = msglist[0].split()
+    for msg_id in msg_ids:
+        (status,content) = M.fetch(msg_id,"(rfc822)")
+        (formatting,tail) = content
+        (rfcdesc,rfcdata) = formatting
+        msg = email.message_from_string(rfcdata)
+        message_to_ticket(msg)
