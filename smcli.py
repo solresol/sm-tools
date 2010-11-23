@@ -227,16 +227,14 @@ return_parts = { INCIDENT: 'IncidentID',
                  }
 
 def standard_arg_type(module_name):
-    if module_name == SERVICE_DESK:
-        return "InteractionModelType"
     return module_name.capitalize() + "ModelType"
 
 
 def typical_create_program(sm_module,cmdline,action,print_return=False):
+    web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Create' + sm_module.capitalize()
     return_part=return_parts[sm_module]
-    web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field-name=Value ...",
                           version=version)
     web_service.add_to_command_line_parser(parser,arg_type,
@@ -258,11 +256,11 @@ def typical_create_program(sm_module,cmdline,action,print_return=False):
 
 
 def typical_search_program(sm_module,cmdline,action,print_return=False):
+    web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Retrieve' + sm_module.capitalize() + 'KeysList'
     return_part=return_parts[sm_module]
 
-    web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
     web_service.add_to_command_line_parser(parser,arg_type,
@@ -285,9 +283,9 @@ def typical_search_program(sm_module,cmdline,action,print_return=False):
 
 
 def typical_update_program(sm_module,cmdline,action,print_return=False):
+    web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation=action.capitalize() + sm_module.capitalize()
-    web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
     web_service.add_to_command_line_parser(parser,arg_type)
     (options,args) = parser.parse_args(cmdline)
@@ -305,9 +303,9 @@ def typical_update_program(sm_module,cmdline,action,print_return=False):
 
 
 def typical_retrieve_program(sm_module,cmdline,action,print_return=False):
+    web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Retrieve' + sm_module.capitalize()
-    web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
                           version=version)
     web_service.add_to_command_line_parser(parser,arg_type,
