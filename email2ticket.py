@@ -24,6 +24,7 @@ configuration.read(config_file)
 class EmailNotValid(Exception): pass
 class ContactNotFound(Exception): pass
 class MultipleContactsWithSameEmail(Exception): pass
+class NoEmailAddressFound(Exception): pass
 
 def get_contact(email_address):
     m = email_re.search(email_address)
@@ -82,10 +83,16 @@ def message_to_ticket(message):
     if subject_is_title: this_ticket['Title'] = msg['Subject']
     if from_is_contact: this_ticket['Contact'] = get_contact(msg['From'])  
     else:
-        for part in msg.walk():
-            m=email_re.search(part)
-            if m is None: continue
-            this_ticket['Contact'] = get_contact(part[m.start():m.end()])
+        m = email.re.search(msg['Subject'])
+        if m is not None:
+            this_ticket['Contact'] = msg['Subject'][m.start():m.end()]
+        else:
+            for part in msg.walk():
+                m=email_re.search(part)
+                if m is None: continue
+                this_ticket['Contact'] = get_contact(part[m.start():m.end()])
+            if not(this_ticket.has_key('Contact')):
+                raise NoEmailAddressFound
     if body_is_description:
         for part in msg.walk():
             if part.get_content_maintype() == "text":
@@ -138,3 +145,13 @@ elif protocol[:4] == "IMAP":
         (rfcdesc,rfcdata) = formatting
         msg = email.message_from_string(rfcdata)
         message_to_ticket(msg)
+
+
+
+# To-do:
+# 1. Confirm that IMAP-based email works.
+# 2. Delete messages after we have seen them.
+# 3. Don't die on error conditions.
+# 4. Improve logging.
+# 5. If the first email address doesn't match a contact, try again with
+#    other email addresses in the message.
