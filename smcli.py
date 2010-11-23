@@ -5,7 +5,7 @@
 # The following constants are the tested modules. (Have to be lower case)
 
 INCIDENT = "incident"
-SERVICE_DESK = "servicedesk"
+SERVICE_DESK = "interaction"
 CONFIGURATION = "configuration"
 CONTACT = 'contact'
 PROBLEM_MANAGEMENT = 'problem'
@@ -206,6 +206,9 @@ def camel2unix(x):
     """A convenience function when you want to go from SomethingCamelCase to something-camel-case"""
     answer = x[0].lower()
     for i in range(1,len(x)-1):
+        if x[i] == ".":
+            answer = answer + "-"
+            continue
         answer = answer + x[i].lower()
         if x[i].islower() and x[i+1].isupper():
             answer = answer + '-'
@@ -224,6 +227,8 @@ return_parts = { INCIDENT: 'IncidentID',
                  }
 
 def standard_arg_type(module_name):
+    if module_name == SERVICE_DESK:
+        return "InteractionModelType"
     return module_name.capitalize() + "ModelType"
 
 
@@ -284,7 +289,7 @@ def typical_update_program(sm_module,cmdline,action,print_return=False):
     invocation=action.capitalize() + sm_module.capitalize()
     web_service = smwsdl(sm_module)
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
-    web_service.add_to_command_line_parser(parser,arg_type,include_instance=uses_values)
+    web_service.add_to_command_line_parser(parser,arg_type)
     (options,args) = parser.parse_args(cmdline)
     new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
@@ -367,7 +372,8 @@ def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
 # 10. Implement delete methods (e.g. delete contact)
 # 11. Maybe the "typical_*_program" stuff should be wrapped in a class?
 #     Then I could ditch 'action' as an argument perhaps?
-
+# 12. Instead of hard-coding what actions are supported, we should figure
+#     it out from the WSDL.
 
 supported_actions = { INCIDENT: ['create','close','update','reopen','search','retrieve','wsdl'],
                       SERVICE_DESK: ['create','close','update','search','retrieve','wsdl'],
@@ -388,6 +394,7 @@ function_calls = {
 
 aliases = { 'new' : 'create',
             'make' : 'create',
+            'add' : 'create',
             'change' : 'update',
             'alter' : 'update',
             'find' : 'search',
