@@ -7,9 +7,10 @@ import imaplib
 import poplib
 import os
 import email
-import getpass
-import fnmatch
 import re
+import string
+
+email_re = re.compile('[a-zA-Z0-9._+-]+@[a-zA-Z0-9_+-]+\.[a-zA-Z0-9_.+-]+')
 
 configuration = ConfigParser.ConfigParser()
 
@@ -19,13 +20,21 @@ else:
     config_file = sys.argv[1]
 
 configuration.read(config_file)
-contact_lookup = smcli.smwsdl(smcli.CONTACT)
-application = smcli.smwsdl(smcli.SERVICE_DESK)
+
+class EmailNotValid(Exception): pass
+class ContactNotFound(Exception): pass
+class MultipleContactsWithSameEmail(Exception): pass
 
 def get_contact(email_address):
-    return typical_search_program(smcli.CONTACT,
-                                  ["--email-address="+email_address],
-                                  'search')
+    m = email_re.search(email_address)
+    if m is None:  raise EmailNotValid,email_address
+    lookup = email_address[m.start():m.end()]
+    contact_list = smcli.typical_search_program(smcli.CONTACT,
+                                                ["--email="+lookup],
+                                                'search')
+    if contact_list == []: raise ContactNotFound,lookup
+    if len(contact_list)>1: raise MultipleContactsWithSameEmail,contact_list
+    return contact_list[0]
 
 protocol = configuration.get('mail','protocol').upper()
 server = configuration.get('mail','server')
@@ -41,38 +50,40 @@ else:
 # If not, we look for the first email address in the body
 # or subject of the email.
 if configuration.has_option('rules','from_is_contact'):
-    from_is_contact = configuration.getbool('rules','from_is_contact')
+    from_is_contact = configuration.getboolean('rules','from_is_contact')
 else:
     from_is_contact = True
 
 # Should the body of the email be the description? If not,
 # we are relying on their being a default somewhere.
 if configuration.has_option('rules','body_is_description'):
-    body_is_description = configuration.getbool('rules','body_is_description')
+    body_is_description = configuration.getboolean('rules','body_is_description')
 else:
     body_is_description = True
 
 # Is the subject of the email the title of the service desk ticket?
 # If not, there needs to be a default in the config file.
 if configuration.has_option('rules','subject_is_title'):
-    body_is_description = configuration.getbool('rules','subject_is_title')
+    subject_is_title = configuration.getboolean('rules','subject_is_title')
 else:
-    body_is_description = True
+    subject_is_title = True
 
-# One day -- add a Bayesian filter to figure out all the remaining
-# fields.
+# Do you want the call to close immediately? You can't do this simply
+# by setting the call status.
+if configuration.has_option('rules','close_immediately'):
+    close_immediately = configuration.getboolean('rules','close_immediately')
+else:
+    close_immediately = False
 
-tickets_to_create = []
-
-email_re = re.compile('[a-zA-Z0-9._+-]+@[a-zA-Z0-9_+-]+.[a-zA-Z0-9_.+-]+')
 
 def message_to_ticket(message):
+    #print "Handling message:",message
     this_ticket = {}
     if subject_is_title: this_ticket['Title'] = msg['Subject']
     if from_is_contact: this_ticket['Contact'] = get_contact(msg['From'])  
     else:
         for part in msg.walk():
-            m=email_re.match(part)
+            m=email_re.search(part)
             if m is None: continue
             this_ticket['Contact'] = get_contact(part[m.start():m.end()])
     if body_is_description:
@@ -85,11 +96,13 @@ def message_to_ticket(message):
                     # Then it will have to do if nothing better comes along
                     this_ticket['Description'] = part.get_payload()
         # Hope that there was some valid part of that message.
-    print message_to_ticket
     command_line = []
-    for k in message_to_ticket.keys(): 
-        command_line.append("--"+k+"="+message_to_ticket[k])
-    application.typical_create_program(smcli.SERVICE_DESK,command_line,'create')
+    for k in this_ticket.keys():
+        command_line.append("--"+k+"="+this_ticket[k])
+    t=smcli.typical_create_program(smcli.SERVICE_DESK,command_line,'create')
+    if close_immediately:
+        smcli.typical_update_program(smcli.SERVICE_DESK,["--call-id",t],'close')
+    
 
 
 if protocol[:3] == 'POP':
