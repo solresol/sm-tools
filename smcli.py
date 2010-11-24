@@ -9,6 +9,7 @@ SERVICE_DESK = "interaction"
 CONFIGURATION = "configuration"
 CONTACT = 'contact'
 PROBLEM_MANAGEMENT = 'problem'
+EVENTOUT = 'eventout'  ;# this one requires special stuff loaded in SM7/9
 
 ######################################################################
 #
@@ -39,7 +40,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                SERVICE_DESK: "ServiceDesk.wsdl",
                CONFIGURATION: "ConfigurationManagement.wsdl",
                CONTACT: "ConfigurationManagement.wsdl",
-               PROBLEM_MANAGEMENT: "ProblemManagement.wsdl"
+               PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
+               EVENTOUT: "Eventout.wsdl"
                }
 
 class UpdateException(Exception):
@@ -223,7 +225,8 @@ def camel2unix(x):
 return_parts = { INCIDENT: 'IncidentID',
                  SERVICE_DESK: 'CallID',
                  CONTACT: 'ContactName',
-                 PROBLEM_MANAGEMENT: 'id'
+                 PROBLEM_MANAGEMENT: 'id',
+                 EVENTOUT: 'Evsysseq'
                  }
 
 def standard_arg_type(module_name):
@@ -338,7 +341,12 @@ def typical_retrieve_program(sm_module,cmdline,action,print_return=False):
                     if subelem.__dict__.has_key('value'):
                         ret[k].append(subelem.value)
         else:
-            ret[k] = v.value
+            if not(v.__dict__.has_key('value')):
+                # Hitting this code means something is badly wrong in the server response
+                # Sometimes it might mean an invalid query was sent.
+                print k,v,answer
+            else:
+                ret[k] = v.value
 
     if print_return:
         fields = ret.keys()
@@ -377,7 +385,8 @@ supported_actions = { INCIDENT: ['create','close','update','reopen','search','re
                       SERVICE_DESK: ['create','close','update','search','retrieve','wsdl'],
                       CONTACT: ['create','update','reopen','search','retrieve','wsdl'],
                       PROBLEM_MANAGEMENT: ['create','close','reopen','search','retrieve','update','wsdl'],
-                      CONFIGURATION: ['wsdl']
+                      CONFIGURATION: ['wsdl'],
+                      EVENTOUT: ['wsdl','create','update','search','retrieve']
                       }
   
 function_calls = {
