@@ -14,8 +14,8 @@ def sendsms(phone,message,username='SMS08836',password='6db1cb25',config_file=No
     if config_file is not None: sys.exit("Sorry, haven't implemented reading username and password from config file yet")
     if type(phone)==type([]):
         phone = string.join(phone,',')
-    form = {'u': username
-            'p': password
+    form = {'u': username,
+            'p': password,
             'd': phone,
             'm': message
             }
@@ -26,4 +26,4 @@ def sendsms(phone,message,username='SMS08836',password='6db1cb25',config_file=No
     m = good_result.search(content)
     if m is None:
         raise SendFailureException,content
-    return int(content[m.group(0)])
+    return int(m.group(1))
