@@ -301,7 +301,7 @@ def typical_update_program(sm_module,cmdline,action,print_return=False):
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
     web_service.add_to_command_line_parser(parser,arg_type)
     (options,args) = parser.parse_args(cmdline)
-    new_incident = web_service.create_soap_object(arg_type,options.__dict__,provide_defaults=False)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
     ret = []
     if not(answer.__dict__.has_key('messages')):
