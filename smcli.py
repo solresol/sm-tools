@@ -9,6 +9,9 @@ SERVICE_DESK = "interaction"
 CONFIGURATION = "configuration"
 CONTACT = 'contact'
 PROBLEM_MANAGEMENT = 'problem'
+COMPANY = 'company'
+COMPUTER = 'computer'
+DEPARTMENT = 'department'
 EVENTOUT = 'eventout'  ;# this one requires special stuff loaded in SM7/9
 
 ######################################################################
@@ -40,6 +43,9 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                SERVICE_DESK: "ServiceDesk.wsdl",
                CONFIGURATION: "ConfigurationManagement.wsdl",
                CONTACT: "ConfigurationManagement.wsdl",
+               COMPANY: "ConfigurationManagement.wsdl",
+               COMPUTER: "ConfigurationManagement.wsdl",
+               DEPARTMENT: "ConfigurationManagement.wsdl",
                PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
                EVENTOUT: "Eventout.wsdl"
                }
@@ -226,7 +232,10 @@ return_parts = { INCIDENT: 'IncidentID',
                  SERVICE_DESK: 'CallID',
                  CONTACT: 'ContactName',
                  PROBLEM_MANAGEMENT: 'id',
-                 EVENTOUT: 'Evsysseq'
+                 EVENTOUT: 'Evsysseq',
+                 COMPANY: 'CustomerID',
+                 COMPUTER: 'logical.name',
+                 DEPARTMENT: None
                  }
 
 def standard_arg_type(module_name):
@@ -291,6 +300,26 @@ def typical_update_program(sm_module,cmdline,action,print_return=False):
     invocation=action.capitalize() + sm_module.capitalize()
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
     web_service.add_to_command_line_parser(parser,arg_type)
+    (options,args) = parser.parse_args(cmdline)
+    new_incident = web_service.create_soap_object(arg_type,options.__dict__,provide_defaults=False)
+    answer = web_service.invoke(invocation,new_incident)
+    ret = []
+    if not(answer.__dict__.has_key('messages')):
+        # Something really bad happened
+        raise UpdateException
+    for m in answer.messages.message:
+        ret.append(m.value)
+    if print_return:
+        sys.stderr.write(string.join(ret,'\n')+'\n')
+    return ret
+
+
+def typical_delete_program(sm_module,cmdline,action,print_return=False):
+    web_service = smwsdl(sm_module)
+    arg_type=standard_arg_type(sm_module)
+    invocation='Delete' + sm_module.capitalize()
+    parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
+    web_service.add_to_command_line_parser(parser,arg_type,include_instance=False,provide_defaults=False)
     (options,args) = parser.parse_args(cmdline)
     new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
@@ -383,10 +412,13 @@ def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
 
 supported_actions = { INCIDENT: ['create','close','update','reopen','search','retrieve','wsdl'],
                       SERVICE_DESK: ['create','close','update','search','retrieve','wsdl'],
-                      CONTACT: ['create','update','reopen','search','retrieve','wsdl'],
+                      CONTACT: ['create','update','reopen','search','retrieve','wsdl','delete'],
+                      COMPANY: ['create','update','reopen','search','retrieve','wsdl','delete'],
+                      COMPUTER: ['create','update','reopen','search','retrieve','wsdl','delete'],
+                      DEPARTMENT: ['create','update','reopen','search','retrieve','wsdl','delete'],
                       PROBLEM_MANAGEMENT: ['create','close','reopen','search','retrieve','update','wsdl'],
                       CONFIGURATION: ['wsdl'],
-                      EVENTOUT: ['wsdl','create','update','search','retrieve']
+                      EVENTOUT: ['wsdl','create','update','search','retrieve','delete']
                       }
   
 function_calls = {
@@ -396,7 +428,8 @@ function_calls = {
     'reopen'  : typical_update_program,
     'search'  : typical_search_program,
     'retrieve': typical_retrieve_program,
-    'wsdl': typical_list_methods_program
+    'wsdl': typical_list_methods_program,
+    'delete': typical_delete_program
     }
 
 aliases = { 'new' : 'create',
@@ -409,7 +442,9 @@ aliases = { 'new' : 'create',
             'return' : 'retrieve',
             'lookup' : 'retrieve',
             'fetch' : 'retrieve',
-            'debug' : 'wsdl' }
+            'debug' : 'wsdl',
+            'remove' : 'delete'
+            }
 
 table_aliases = { 'incident' : INCIDENT,
                   'incidents' : INCIDENT,
