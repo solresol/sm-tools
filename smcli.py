@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This module provides support for HP ServiceManager Web Services (WSDL)
 # $Id$
 
