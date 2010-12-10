@@ -3,17 +3,17 @@
 # $Id$
 
 
-# The following constants are the tested modules. (Have to be lower case)
+# The following constants are the tested modules. 
 
-INCIDENT = "incident"
-SERVICE_DESK = "interaction"
-CONFIGURATION = "configuration"
-CONTACT = 'contact'
-PROBLEM_MANAGEMENT = 'problem'
-COMPANY = 'company'
-COMPUTER = 'computer'
-DEPARTMENT = 'department'
-EVENTOUT = 'eventout'  ;# this one requires special stuff loaded in SM7/9
+INCIDENT = "Incident"
+SERVICE_DESK = "Interaction"
+CONFIGURATION = "Configuration"
+CONTACT = 'Contact'
+PROBLEM_MANAGEMENT = 'Problem'
+COMPANY = 'Company'
+COMPUTER = 'Computer'
+DEPARTMENT = 'Department'
+EVENTOUT = 'Eventout'  ;# this one requires special stuff loaded in SM7/9
 
 ######################################################################
 #
@@ -34,7 +34,8 @@ import re
 # - sudo easy_install http://pypi.python.org/packages/2.6/s/suds/suds-0.4-py2.6.egg
 from suds import WebFault
 from suds.client import Client
-from suds.transport.http import HttpAuthenticated
+
+import suds.transport.http
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -51,8 +52,28 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                EVENTOUT: "Eventout.wsdl"
                }
 
+
+
+
+service_manager_naming_convention = [
+    ('create',re.compile('Create(.*)')),
+    ('reopen', re.compile('Reopen(.*)')),
+    ('search', re.compile('Retrieve(.*)KeysList')),
+    ('retrievelist', re.compile('Retrieve(.*)List')),
+    ('update', re.compile('Update(.*)')),
+    ('retrieve', re.compile('Retrieve(.*)')),
+    ('delete', re.compile('Delete(.*)'))
+    ]
+
+
 class UpdateException(Exception):
     pass
+
+class UnableToCreateSoapClient(Exception):
+    def __init__(self,err):
+        self.__err = err
+    def __str__(self):
+        return "UnableToCreateSoapClient" + `err`
 
 class smwsdl:
     """Reads config files from /etc/smwsdl.ini, ~/.smswsdl.ini,
@@ -65,7 +86,10 @@ to."""
         self.__read_config_files(config_file)
         self.__deduce_defaults_section()
         self.__get_connection_details()
-        self.__create_soap_client()
+        try:
+            self.__create_soap_client()
+        except suds.transport.TransportError,err:
+            raise UnableToCreateSoapClient(err)
 
     def print_available_methods(self):
         print self.__client
@@ -204,10 +228,48 @@ to."""
 
     def __create_soap_client(self):
         url = self.__service_manager_protocol + "://" + self.__service_manager_server + ":" + `self.__service_manager_port` + "/SM/7/" + self.__wsdl_path
-        t = HttpAuthenticated(username=self.__service_manager_username,
-                              password=self.__service_manager_password)
+        t = suds.transport.http.HttpAuthenticated(username=self.__service_manager_username,
+                                                  password=self.__service_manager_password)
         self.__client = Client(url,transport=t)
 
+
+    def list_raw_methods(self,print_return=False):
+        """Every single method in every single port"""
+        answer = []
+        for sd in self.__client.sd:
+            for port in sd.service.ports:
+                answer = answer + port.methods.keys()
+        if print_return:
+            print answer
+        return answer
+
+    def list_objects(self,print_return=False):
+        """Quite often this will be a one-element list, like [u'Incident']"""
+        known_objects = {}
+        raw_methods = self.list_raw_methods()
+        for method in raw_methods:
+            for (purpose,fn) in service_manager_naming_convention:
+                m = fn.match(method)
+                if m is not None:
+                    obj = m.group(1)
+                    known_objects[obj] = True
+                    break
+        if print_return:
+            print known_objects.keys()
+        return known_objects.keys()
+
+    def list_methods_for_object(self,obj):
+        raw_methods = self.list_raw_methods()
+        available_methods = {}
+        for method in raw_methods:
+            for (purpose,fn) in service_manager_naming_convention:
+                m = fn.match(method)
+                if m is not None:
+                    if m.group(1) == obj:
+                        available_methods[purpose] = True
+                        break
+        return available_methods.keys()
+            
 
 ######################################################################
 
@@ -243,8 +305,9 @@ def standard_arg_type(module_name):
     return module_name.capitalize() + "ModelType"
 
 
-def typical_create_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_create_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Create' + sm_module.capitalize()
     return_part=return_parts[sm_module]
@@ -268,8 +331,9 @@ def typical_create_program(sm_module,cmdline,action,print_return=False):
     return ret
 
 
-def typical_search_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_search_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Retrieve' + sm_module.capitalize() + 'KeysList'
     return_part=return_parts[sm_module]
@@ -295,8 +359,9 @@ def typical_search_program(sm_module,cmdline,action,print_return=False):
     return answers
 
 
-def typical_update_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_update_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation=action.capitalize() + sm_module.capitalize()
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
@@ -315,8 +380,9 @@ def typical_update_program(sm_module,cmdline,action,print_return=False):
     return ret
 
 
-def typical_delete_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_delete_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Delete' + sm_module.capitalize()
     parser = OptionParser(usage="usage: %prog --"+sm_module+"-id=...",version=version)
@@ -335,8 +401,9 @@ def typical_delete_program(sm_module,cmdline,action,print_return=False):
     return ret
 
 
-def typical_retrieve_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_retrieve_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
     invocation='Retrieve' + sm_module.capitalize()
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
@@ -393,8 +460,9 @@ def typical_retrieve_program(sm_module,cmdline,action,print_return=False):
                 print k+": "+ret[k]
     return ret
 
-def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
-    web_service = smwsdl(sm_module)
+def typical_list_methods_program(sm_module,cmdline,action,print_return=False,web_service=None):
+    if web_service is None:
+        web_service = smwsdl(sm_module)
     if print_return:
         web_service.print_available_methods()
     return None
@@ -411,16 +479,6 @@ def typical_list_methods_program(sm_module,cmdline,action,print_return=False):
 # 12. Instead of hard-coding what actions are supported, we should figure
 #     it out from the WSDL.
 
-supported_actions = { INCIDENT: ['create','close','update','reopen','search','retrieve','wsdl'],
-                      SERVICE_DESK: ['create','close','update','search','retrieve','wsdl'],
-                      CONTACT: ['create','update','reopen','search','retrieve','wsdl','delete'],
-                      COMPANY: ['create','update','reopen','search','retrieve','wsdl','delete'],
-                      COMPUTER: ['create','update','reopen','search','retrieve','wsdl','delete'],
-                      DEPARTMENT: ['create','update','reopen','search','retrieve','wsdl','delete'],
-                      PROBLEM_MANAGEMENT: ['create','close','reopen','search','retrieve','update','wsdl'],
-                      CONFIGURATION: ['wsdl'],
-                      EVENTOUT: ['wsdl','create','update','search','retrieve','delete']
-                      }
   
 function_calls = {
     'create'  : typical_create_program,
@@ -433,7 +491,7 @@ function_calls = {
     'delete': typical_delete_program
     }
 
-aliases = { 'new' : 'create',
+action_aliases = { 'new' : 'create',
             'make' : 'create',
             'add' : 'create',
             'change' : 'update',
@@ -458,18 +516,24 @@ table_aliases = { 'incident' : INCIDENT,
                   'contact' : CONTACT,
                   'contacts' : CONTACT,
                   'configuration' : CONFIGURATION,
-                  'problems' : PROBLEM_MANAGEMENT
+                  'problems' : PROBLEM_MANAGEMENT,
+                  'company' : COMPANY
                   }
 
 if __name__ == '__main__':
     action = sys.argv[1].lower()
-    if (aliases.has_key(action)): action = aliases[action]
+    if (action_aliases.has_key(action)):
+        action = action_aliases[action]
+    else:
+        sys.exit("Unknown action: " + sys.argv[1] + "\nKnown actions are: "+string.join(action_aliases.keys()," "))
     
     table = sys.argv[2].lower()
     if (table_aliases.has_key(table)):
         table = table_aliases[table]
+    else:
+        sys.exit("Unknown object: " + sys.argv[2] + "\nKnown objects are: "+string.join(table_aliases.keys()," "))
 
-    sys.argv[0] = sys.argv[0]+" "+action+" " + table
+    sys.argv[0] = sys.argv[0]+" "+sys.argv[1]+" " + sys.argv[2]
     cmdline = sys.argv[3:]
     if os.name == 'nt':
         # Allow users to use /Foo:bar instead of --Foo=bar
@@ -487,13 +551,12 @@ if __name__ == '__main__':
                 cmdline[i] = justslash.sub('--',cmdline[i])
                 continue
 
-    if not(supported_actions.has_key(table)):
-        sys.exit("Unsupported table. Supported tables are: " + string.join(supported_actions.keys()," "))
-
-    if not(action in supported_actions[table]):
-        sys.exit("Unsupported action. Actions are: "+string.join(supported_actions[table],' '))
+    ws = smwsdl(table)
+    supported_actions = ws.list_methods_for_object(table)
+    if not(action in supported_actions):
+        sys.exit("Unsupported action. Actions are: "+string.join(supported_actions,' '))
     function = function_calls[action]
     try:
-        function(table,cmdline,action,print_return=True)
+        function(table,cmdline,action,print_return=True,web_service=ws)
     except UpdateException:
         sys.exit("Update failure")
