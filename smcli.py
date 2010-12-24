@@ -14,6 +14,8 @@ COMPANY = 'Company'
 COMPUTER = 'Computer'
 DEPARTMENT = 'Department'
 EVENTOUT = 'Eventout'  ;# this one requires special stuff loaded in SM7/9
+SERVICENETIF = 'Servicenetmap'
+
 
 ######################################################################
 #
@@ -49,7 +51,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                COMPUTER: "ConfigurationManagement.wsdl",
                DEPARTMENT: "ConfigurationManagement.wsdl",
                PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
-               EVENTOUT: "Eventout.wsdl"
+               EVENTOUT: "Eventout.wsdl",
+               SERVICENETIF: "ServiceNetMap2.wsdl"
                }
 
 
@@ -75,15 +78,45 @@ class UnableToCreateSoapClient(Exception):
     def __str__(self):
         return "UnableToCreateSoapClient" + `err`
 
+def read_config_files(config_file=None):
+    c = ConfigParser.ConfigParser()
+    if config_file is not None:
+        if type(config_file) == type([]):         config_file_locations = config_file
+        else:                                     config_file_locations = [config_file]
+    elif os.name == 'nt':
+        config_file_locations = [ 'smwsdl.ini' ]
+        # Perhaps I should look up the registry instead?
+        # Look in the install location?
+    elif os.name == 'posix':
+        config_file_locations = ['/etc/smwsdl.ini',
+                                 os.path.expanduser('~/.smwsdl.ini'),
+                                 '.smwsdl.ini'
+                                 ]
+        if os.environ.has_key('SMWSDL_CONF'):
+            config_file_locations.append(os.environ['SMWSDL_CONF'])
+    else:
+        sys.exit("Don't know where to look for config files on "+os.name)
+
+    files_read = c.read(config_file_locations)
+    if files_read == []:
+        sys.exit("Cannot continue because none of the following files were usable: "+string.join(config_file_locations," "))
+    return c
+
+
+
 class smwsdl:
     """Reads config files from /etc/smwsdl.ini, ~/.smswsdl.ini,
 ./.smswsdl.ini and $SMWSDL_CONF. Figures out which server to connect
 to."""
-    def __init__(self,sm_module,config_file=None):
+    def __init__(self,sm_module,config_file=None,config_obj=None):
         self.__sm_module = sm_module
         self.__wsdl_path = wsdl_paths[sm_module]
 
-        self.__read_config_files(config_file)
+        if config_obj is not None:
+            self.__config = config_obj
+        else:
+            self.__config = read_config_files(config_file)
+
         self.__deduce_defaults_section()
         self.__get_connection_details()
         try:
@@ -168,32 +201,6 @@ to."""
             return
         self.__default_section = self.__sm_module + " defaults"
 
-    def __read_config_files(self,config_file):
-        self.__config = ConfigParser.ConfigParser()
-        if config_file is not None:
-            if type(config_file) == type([]):
-                config_file_locations = config_file
-            else:
-                config_file_locations = [config_file]
-        elif os.name == 'nt':
-            config_file_locations = [ 'smwsdl.ini' ]
-            # Perhaps I should look up the registry instead?
-            # Look in the install location?
-        elif os.name == 'posix':
-            config_file_locations = ['/etc/smwsdl.ini',
-                                     os.path.expanduser('~/.smwsdl.ini'),
-                                     '.smwsdl.ini'
-                                     ]
-            if os.environ.has_key('SMWSDL_CONF'):
-                config_file_locations.append(os.environ['SMWSDL_CONF'])
-        else:
-            sys.exit("Don't know where to look for config files on "+os.name)
-
-        files_read = self.__config.read(config_file_locations)
-        if files_read == []:
-            sys.exit("Cannot continue because none of the following files were usable: "+string.join(config_file_locations," "))
-
-
     def __get_connection_details(self):
         """Read the [connection] section from the config file"""
         if self.__config.has_option('connection','server'):
@@ -260,7 +267,7 @@ to."""
 
     def list_methods_for_object(self,obj):
         raw_methods = self.list_raw_methods()
-        available_methods = {}
+        available_methods = {'wsdl' : True}
         for method in raw_methods:
             for (purpose,fn) in service_manager_naming_convention:
                 m = fn.match(method)
@@ -298,7 +305,8 @@ return_parts = { INCIDENT: 'IncidentID',
                  EVENTOUT: 'Evsysseq',
                  COMPANY: 'CustomerID',
                  COMPUTER: 'logical.name',
-                 DEPARTMENT: None
+                 DEPARTMENT: None,
+                 SERVICENETIF: 'id'
                  }
 
 def standard_arg_type(module_name):
@@ -491,19 +499,27 @@ function_calls = {
     'delete': typical_delete_program
     }
 
-action_aliases = { 'new' : 'create',
-            'make' : 'create',
-            'add' : 'create',
-            'change' : 'update',
-            'alter' : 'update',
-            'find' : 'search',
-            'list' : 'search',
-            'return' : 'retrieve',
-            'lookup' : 'retrieve',
-            'fetch' : 'retrieve',
-            'debug' : 'wsdl',
-            'remove' : 'delete'
-            }
+action_aliases = {
+    'gloop'  : 'create',
+    'new'    : 'create',
+    'make'   : 'create',
+    'add'    : 'create',
+    'create' : 'create',
+    'change' : 'update',
+    'alter' : 'update',
+    'update': 'update',
+    'find'   : 'search',
+    'list'   : 'search',
+    'search' : 'search',
+    'return'   : 'retrieve',
+    'lookup'   : 'retrieve',
+    'retrieve' : 'retrieve',
+    'fetch'    : 'retrieve',
+    'debug' : 'wsdl',
+    'wsdl'  : 'wsdl',
+    'remove' : 'delete',
+    'delete' : 'delete'
+    }
 
 table_aliases = { 'incident' : INCIDENT,
                   'incidents' : INCIDENT,
@@ -517,7 +533,9 @@ table_aliases = { 'incident' : INCIDENT,
                   'contacts' : CONTACT,
                   'configuration' : CONFIGURATION,
                   'problems' : PROBLEM_MANAGEMENT,
-                  'company' : COMPANY
+                  'company' : COMPANY,
+                  'eventout' : EVENTOUT,
+                  'servicenetif' : SERVICENETIF
                   }
 
 if __name__ == '__main__':
