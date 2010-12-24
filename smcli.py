@@ -486,6 +486,8 @@ def typical_list_methods_program(sm_module,cmdline,action,print_return=False,web
 #     Then I could ditch 'action' as an argument perhaps?
 # 12. Instead of hard-coding what actions are supported, we should figure
 #     it out from the WSDL.
+# 13. We should have a config file so that we can add additional WSDLs
+#     if the site has customised extaccess.
 
   
 function_calls = {
