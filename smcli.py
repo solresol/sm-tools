@@ -202,6 +202,7 @@ to."""
             self.__default_section = os.environ['SMWSDL_DEFAULTS']
             return
         self.__default_section = self.__sm_module + " defaults"
+        self.__default_section = self.__default_section.lower()
 
     def __get_connection_details(self):
         """Read the [connection] section from the config file"""
