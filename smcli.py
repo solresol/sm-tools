@@ -15,6 +15,7 @@ COMPUTER = 'Computer'
 DEPARTMENT = 'Department'
 EVENTOUT = 'Eventout'  ;# this one requires special stuff loaded in SM7/9
 SERVICENETIF = 'Servicenetmap'
+DEVICE = 'Device'
 
 
 ######################################################################
@@ -49,10 +50,11 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                CONTACT: "ConfigurationManagement.wsdl",
                COMPANY: "ConfigurationManagement.wsdl",
                COMPUTER: "ConfigurationManagement.wsdl",
+               DEVICE: "ConfigurationManagement.wsdl",
                DEPARTMENT: "ConfigurationManagement.wsdl",
                PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
                EVENTOUT: "Eventout.wsdl",
-               SERVICENETIF: "ServiceNetMap2.wsdl"
+               SERVICENETIF: "ServiceNetMap.wsdl"
                }
 
 
@@ -306,7 +308,8 @@ return_parts = { INCIDENT: 'IncidentID',
                  COMPANY: 'CustomerID',
                  COMPUTER: 'logical.name',
                  DEPARTMENT: None,
-                 SERVICENETIF: 'id'
+                 SERVICENETIF: 'id',
+                 DEVICE: 'ConfigurationItem'
                  }
 
 def standard_arg_type(module_name):
@@ -536,8 +539,13 @@ table_aliases = { 'incident' : INCIDENT,
                   'configuration' : CONFIGURATION,
                   'problems' : PROBLEM_MANAGEMENT,
                   'company' : COMPANY,
+                  'device' : DEVICE,
+                  'devices' : DEVICE,
+                  'ci' : DEVICE,
+                  'configurationitem' : DEVICE,
+                  'bizservice' : DEVICE,
                   'eventout' : EVENTOUT,
-                  'servicenetif' : SERVICENETIF
+                  'servicenetif' : SERVICENETIF,
                   }
 
 if __name__ == '__main__':
