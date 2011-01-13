@@ -16,7 +16,7 @@ DEPARTMENT = 'Department'
 EVENTOUT = 'Eventout'  ;# this one requires special stuff loaded in SM7/9
 SERVICENETIF = 'Servicenetmap'
 DEVICE = 'Device'
-
+ACTIVITY = "Activity"  ;# this also requires special stuff loaded
 
 ######################################################################
 #
@@ -41,6 +41,7 @@ from suds.client import Client
 import suds.transport.http
 
 logging.basicConfig(level=logging.ERROR)
+#logging.basicConfig(level=logging.DEBUG)
 
 
 
@@ -54,7 +55,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                DEPARTMENT: "ConfigurationManagement.wsdl",
                PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
                EVENTOUT: "Eventout.wsdl",
-               SERVICENETIF: "ServiceNetMap.wsdl"
+               SERVICENETIF: "ServiceNetMap.wsdl",
+               ACTIVITY: "Activity.wsdl"
                }
 
 
@@ -235,8 +237,8 @@ to."""
             self.__service_manager_username = self.__config.get('connection','user')
         else:
             sys.exit("Username not specified")
-
-
+        #sys.stderr.write("Logging in with " + self.__service_manager_username + " using password " + self.__service_manager_password + "\n")
+        
     def __create_soap_client(self):
         url = self.__service_manager_protocol + "://" + self.__service_manager_server + ":" + `self.__service_manager_port` + "/SM/7/" + self.__wsdl_path
         t = suds.transport.http.HttpAuthenticated(username=self.__service_manager_username,
@@ -311,6 +313,7 @@ return_parts = { INCIDENT: 'IncidentID',
                  COMPUTER: 'logical.name',
                  DEPARTMENT: None,
                  SERVICENETIF: 'id',
+                 ACTIVITY: 'UniqueNumber',
                  DEVICE: 'ConfigurationItem'
                  }
 
@@ -550,6 +553,10 @@ table_aliases = { 'incident' : INCIDENT,
                   'bizservice' : DEVICE,
                   'eventout' : EVENTOUT,
                   'servicenetif' : SERVICENETIF,
+		  'activity' : ACTIVITY,
+                  'activities' : ACTIVITY,
+                  'activitylog' : ACTIVITY,
+                  'activitylogs' : ACTIVITY
                   }
 
 if __name__ == '__main__':
