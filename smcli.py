@@ -30,6 +30,7 @@ from optparse import OptionParser
 from optparse import OptionGroup
 import sys
 import re
+import os
 
 # This program requires the python SUDS package. If the import in the
 # next line fails, then try
@@ -40,8 +41,10 @@ from suds.client import Client
 
 import suds.transport.http
 
-logging.basicConfig(level=logging.ERROR)
-#logging.basicConfig(level=logging.DEBUG)
+if os.environ.has_key("DEBUG"):
+  logging.basicConfig(level=logging.DEBUG)
+else:
+  logging.basicConfig(level=logging.ERROR)
 
 
 
