@@ -138,21 +138,38 @@ class HPServiceManager:
             # I should also log that this happened.
             choices.sort()
             self.__new_interaction.instance.ContactName.value = choices[0]
-        self.__new_interaction.instance.Title.value = message['Subject']
+        if self.__new_interaction.instance.__dict__.has_key('Title'):
+            self.__new_interaction.instance.Title.value = message['Subject']
+            # I dunno what happens if there isn't a title.
         description = None
-        for part in msg.walk():
+        part_pos = 0
+        used_part_pos = None
+        for part in message.walk():
+            part_pos = part_pos + 1
             if part.get_content_maintype() == "text":
                 if part.get_content_subtype() == "plain":
                     description = part.get_payload()
+                    used_part_pos = part_pos
                     break
                 if part.get_content_subtype() == "html":
                     # Then it will have to do if nothing better comes along
                     description = part.get_payload()
+                    used_part_pos = part_pos
         # if description is None, what should we do?
         if description is None: description = "<No text or html part found in the source email>"
         self.__new_interaction.instance.Description.value = description
-        # Now to do attachments.
+
+        # Now to do attachments ... and then actually invoke CreateInteraction
+        part_pos = 0
+        for part in message.walk():
+            part_pos = part_pos + 1
+            if part_pos == used_part_pos: continue
+            print "Part",part_pos,part.get_filename()
+            print part.as_string()
+            print dir(part)
         print self.__new_interaction
+        attachments = self.__service_desk_client.factory.create('AttachmentsType')
+        print attachments
         
 
 ######################################################################
@@ -388,8 +405,6 @@ def message_to_ticket(message):
                 this_ticket['Contact'] = get_contact(part[m.start():m.end()])
             if not(this_ticket.has_key('Contact')):
                 raise NoEmailAddressFound
-    if body_is_description:
-        # Hope that there was some valid part of that message.
     command_line = []
     for k in this_ticket.keys():
         command_line.append("--"+k+"="+this_ticket[k])
