@@ -8,7 +8,7 @@ import re
 
 class SendFailureException(Exception): pass
 
-def sendsms(phone,message,username='SMS08836',password='6db1cb25',config_file=None):
+def sendsms(phone,message,username='xxxxx',password='xxxxxx',config_file=None):
     # Username and password should be in a config file; then I can get rid of those
     # arguments
     if config_file is not None: sys.exit("Sorry, haven't implemented reading username and password from config file yet")
