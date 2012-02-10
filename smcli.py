@@ -415,6 +415,7 @@ def typical_delete_program(sm_module,cmdline,action,print_return=False,web_servi
     ret = []
     if not(answer.__dict__.has_key('messages')):
         # Something really bad happened
+	sys.stderr.write(`answer` + "\n" + `answer.__dict__` + "\n")
         raise UpdateException
     for m in answer.messages.message:
         try:
