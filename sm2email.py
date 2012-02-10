@@ -4,10 +4,11 @@ import smtplib
 import ConfigParser
 import email
 import smcli
+import sys
 from email.MIMEText import MIMEText
 
 my_config = ConfigParser.ConfigParser()
-read_ok = my_config.read(['sm2email.conf'])
+read_ok = my_config.read(['/etc/sm2email.conf'])
 if read_ok == []:
     sys.exit("Couldn't read sm2email.conf")
 
@@ -42,7 +43,8 @@ for evsys in outgoings:
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['To'] = dest_email
-    msg['From'] = source  ;# not sure if that is sensible or not
+    #msg['From'] = source  ;# not sure if that is sensible or not
+    msg['From'] = from_address 
     #print msg.as_string()
 
     #print "="*70

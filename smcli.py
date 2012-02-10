@@ -417,7 +417,10 @@ def typical_delete_program(sm_module,cmdline,action,print_return=False,web_servi
         # Something really bad happened
         raise UpdateException
     for m in answer.messages.message:
-        ret.append(m.value)
+        try:
+           ret.append(m.value)
+        except AttributeError:
+           ret.append(`m`)
     if print_return:
         sys.stderr.write(string.join(ret,'\n')+'\n')
     return ret
