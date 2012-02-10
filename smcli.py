@@ -17,6 +17,7 @@ EVENTOUT = 'Eventout'  ;# this one requires special stuff loaded in SM7/9
 SERVICENETIF = 'Servicenetmap'
 DEVICE = 'Device'
 ACTIVITY = "Activity"  ;# this also requires special stuff loaded
+OPERATOR = 'Operator'
 
 ######################################################################
 #
@@ -59,7 +60,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                PROBLEM_MANAGEMENT: "ProblemManagement.wsdl",
                EVENTOUT: "Eventout.wsdl",
                SERVICENETIF: "ServiceNetMap.wsdl",
-               ACTIVITY: "Activity.wsdl"
+               ACTIVITY: "Activity.wsdl",
+               OPERATOR: "FSCManagement.wsdl"
                }
 
 
@@ -317,7 +319,8 @@ return_parts = { INCIDENT: 'IncidentID',
                  DEPARTMENT: None,
                  SERVICENETIF: 'id',
                  ACTIVITY: 'UniqueNumber',
-                 DEVICE: 'ConfigurationItem'
+                 DEVICE: 'ConfigurationItem',
+                 OPERATOR: None
                  }
 
 def standard_arg_type(module_name):
@@ -559,7 +562,9 @@ table_aliases = { 'incident' : INCIDENT,
 		  'activity' : ACTIVITY,
                   'activities' : ACTIVITY,
                   'activitylog' : ACTIVITY,
-                  'activitylogs' : ACTIVITY
+                  'activitylogs' : ACTIVITY,
+                  'operator' : OPERATOR,
+                  'operators' : OPERATOR,
                   }
 
 if __name__ == '__main__':
