@@ -32,7 +32,10 @@ for evsys in outgoings:
                                        ['--evsysseq',evsys],
                                        'retrieve'
                                        )
-    sep = e['Evsepchar']
+    try:
+     sep = e['Evsepchar']
+    except:
+     sep = '^'
     data = e['Evfields'].split(sep)
     dest_email = data[0]
     source = data[1]
