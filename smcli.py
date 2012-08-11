@@ -342,7 +342,8 @@ def typical_create_program(sm_module,cmdline,action,print_return=False,web_servi
     new_incident = web_service.create_soap_object(arg_type,options.__dict__)
     answer = web_service.invoke(invocation,new_incident)
     for m in answer.messages.message:
-        sys.stderr.write(m.value + "\n")
+        if hasattr(m,'value'): sys.stderr.write(m.value + "\n")
+        else: sys.stderr.write(`m` + "\n")
     
     if return_part is None:
         ret = `answer.model.instance`
