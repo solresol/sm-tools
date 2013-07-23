@@ -18,6 +18,7 @@ SERVICENETIF = 'Servicenetmap'
 DEVICE = 'Device'
 ACTIVITY = "Activity"  ;# this also requires special stuff loaded
 OPERATOR = 'Operator'
+SHIB = "Shib" ;# also requires special stuff loaded (from ticketrouting)
 
 ######################################################################
 #
@@ -61,7 +62,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                EVENTOUT: "Eventout.wsdl",
                SERVICENETIF: "ServiceNetMap.wsdl",
                ACTIVITY: "Activity.wsdl",
-               OPERATOR: "FSCManagement.wsdl"
+               OPERATOR: "FSCManagement.wsdl",
+               SHIB: "Shib.wsdl"
                }
 
 
@@ -320,7 +322,8 @@ return_parts = { INCIDENT: 'IncidentID',
                  SERVICENETIF: 'id',
                  ACTIVITY: 'UniqueNumber',
                  DEVICE: 'ConfigurationItem',
-                 OPERATOR: None
+                 OPERATOR: None,
+                 SHIB: 'ChangeID'
                  }
 
 def standard_arg_type(module_name):
@@ -570,6 +573,8 @@ table_aliases = { 'incident' : INCIDENT,
                   'activitylogs' : ACTIVITY,
                   'operator' : OPERATOR,
                   'operators' : OPERATOR,
+                  'change': SHIB,
+                  'changes' : SHIB
                   }
 
 if __name__ == '__main__':
