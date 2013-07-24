@@ -19,6 +19,7 @@ DEVICE = 'Device'
 ACTIVITY = "Activity"  ;# this also requires special stuff loaded
 OPERATOR = 'Operator'
 SHIB = "Shib" ;# also requires special stuff loaded (from ticketrouting)
+CM3GROUPS = "MobilityChangeGroups1"
 
 ######################################################################
 #
@@ -63,7 +64,8 @@ wsdl_paths = { INCIDENT : "IncidentManagement.wsdl",
                SERVICENETIF: "ServiceNetMap.wsdl",
                ACTIVITY: "Activity.wsdl",
                OPERATOR: "FSCManagement.wsdl",
-               SHIB: "Shib.wsdl"
+               SHIB: "Shib.wsdl",
+               CM3GROUPS: "MobilityChange1.wsdl"
                }
 
 
@@ -323,12 +325,17 @@ return_parts = { INCIDENT: 'IncidentID',
                  ACTIVITY: 'UniqueNumber',
                  DEVICE: 'ConfigurationItem',
                  OPERATOR: None,
-                 SHIB: 'ChangeID'
+                 SHIB: 'ChangeID',
+                 CM3GROUPS: "Name"
                  }
 
 def standard_arg_type(module_name):
-    return module_name.capitalize() + "ModelType"
+  if module_name == CM3GROUPS: return module_name + "ModelType"
+  return module_name.capitalize() + "ModelType"
 
+def keys_list_type(module_name):
+  if module_name == CM3GROUPS: return module_name + "KeysList"
+  return module_name.capitalize() + "KeysList"
 
 def typical_create_program(sm_module,cmdline,action,print_return=False,web_service=None):
     if web_service is None:
@@ -361,7 +368,7 @@ def typical_search_program(sm_module,cmdline,action,print_return=False,web_servi
     if web_service is None:
         web_service = smwsdl(sm_module)
     arg_type=standard_arg_type(sm_module)
-    invocation='Retrieve' + sm_module.capitalize() + 'KeysList'
+    invocation='Retrieve' + keys_list_type(sm_module)
     return_part=return_parts[sm_module]
 
     parser = OptionParser(usage="usage: %prog --field=... --other-field=...",
@@ -574,7 +581,9 @@ table_aliases = { 'incident' : INCIDENT,
                   'operator' : OPERATOR,
                   'operators' : OPERATOR,
                   'change': SHIB,
-                  'changes' : SHIB
+                  'changes' : SHIB,
+                  'cm3group' : CM3GROUPS,
+                  'cm3groups' : CM3GROUPS
                   }
 
 if __name__ == '__main__':
